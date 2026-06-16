@@ -1,9 +1,9 @@
 // ----------------- ABSTRAÇÃO DE DADOS (SUPABASE / LOCAL FALLBACK) -----------------
 let supabase = null;
 
-// Tenta carregar do import.meta.env (Vite env vars)
-const ENV_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const ENV_SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Tenta carregar do import.meta.env (Vite env vars) ou usa os padrões do projeto
+const ENV_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://qtwpqyfgedwsvziqorht.supabase.co";
+const ENV_SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_dFSD8w6tT78Tvj-MGR-Flw_DMzjc81V";
 
 // Função para inicializar o cliente Supabase
 export function initSupabase(url, key) {

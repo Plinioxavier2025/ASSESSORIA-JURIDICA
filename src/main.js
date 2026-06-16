@@ -725,7 +725,7 @@ const inicializarApp = async () => {
       const target = item.getAttribute('data-target');
 
       // Permitir navegação se tiver permissão ou pertencer ao módulo prazoscumpridos
-      if (!checkPermission(`ver_${target}`) && target !== 'dashboard' && target !== 'configuracoes' && target !== 'prazoscumpridos') {
+      if (!checkPermission(`ver_${target}`) && target !== 'dashboard' && target !== 'prazoscumpridos') {
         showToast("Você não possui permissão para acessar esta funcionalidade.", "warning");
         return;
       }
@@ -1132,12 +1132,15 @@ async function showDashboard(userObj) {
   document.getElementById('user-display-name').textContent = userObj.nome;
   document.getElementById('user-display-role').textContent = userObj.cargo;
 
-  // Mostrar aba restrita de gerenciamento de usuários se admin
+  // Mostrar abas restritas de gerenciamento de usuários e configurações se admin
   const navUser = document.getElementById('nav-item-usuarios');
+  const navConfig = document.getElementById('nav-item-configuracoes');
   if (userObj.cargo === 'Administrador') {
-    navUser.style.display = 'block';
+    if (navUser) navUser.style.display = 'block';
+    if (navConfig) navConfig.style.display = 'block';
   } else {
-    navUser.style.display = 'none';
+    if (navUser) navUser.style.display = 'none';
+    if (navConfig) navConfig.style.display = 'none';
   }
 
   // Preencher e desenhar os cards/tabelas
