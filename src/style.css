@@ -41,7 +41,7 @@ body {
   background-color: var(--primary-dark);
   color: var(--text-normal);
   overflow-x: hidden;
-  height: 100vh;
+  height: 100dvh;
 }
 
 input, select, textarea, button {
@@ -347,7 +347,7 @@ h1, h2, h3, h4, h5, h6 {
 .app-wrapper {
   display: grid;
   grid-template-columns: 260px 1fr;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   animation: fadeIn 0.5s ease-out;
 }
@@ -358,7 +358,7 @@ h1, h2, h3, h4, h5, h6 {
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
   z-index: 100;
 }
 
@@ -516,7 +516,7 @@ h1, h2, h3, h4, h5, h6 {
 .main-viewport {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--primary-dark);
 }
@@ -772,7 +772,7 @@ h1, h2, h3, h4, h5, h6 {
 .app-views-container {
   flex-grow: 1;
   padding: 25px 30px;
-  overflow-y: auto;
+  overflow: auto;
   position: relative;
 }
 
@@ -1066,8 +1066,9 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  width: 100%;
 }
 
 .corporate-data-table {
@@ -1695,4 +1696,141 @@ h1, h2, h3, h4, h5, h6 {
 @keyframes floatInitialsS {
   0% { transform: translate(18%, 12%) rotate(0deg); }
   100% { transform: translate(20%, 14%) rotate(1.5deg); }
+}
+
+/* ----------------- MEDIA QUERIES (RESPONSIVIDADE) ----------------- */
+
+@media (max-width: 1200px) {
+  .deadline-alerts-bar {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    padding: 15px 20px;
+  }
+}
+
+@media (max-width: 992px) {
+  .app-wrapper {
+    grid-template-columns: 80px 1fr;
+  }
+  
+  .brand-text,
+  .nav-link span,
+  .user-info-text {
+    display: none;
+  }
+  
+  .sidebar-brand {
+    padding: 20px 10px;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .nav-link {
+    justify-content: center;
+    padding: 15px 0;
+    border-left-width: 4px;
+  }
+  
+  .sidebar-user-card {
+    flex-direction: column;
+    padding: 15px 10px;
+    gap: 10px;
+  }
+  
+  .btn-logout {
+    margin-top: 5px;
+  }
+  
+  .kanban-wrapper {
+    overflow-x: auto;
+    padding-bottom: 15px;
+  }
+  
+  .kanban-column {
+    min-width: 280px;
+    max-height: calc(100dvh - 320px);
+  }
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    flex-direction: column;
+    height: auto;
+    padding: 15px 20px;
+    gap: 15px;
+    align-items: stretch;
+  }
+  
+  .topbar-right-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .search-box-global {
+    width: 100%;
+    flex-grow: 1;
+  }
+  
+  .search-box-global input:focus {
+    width: 100%;
+  }
+  
+  .deadline-alerts-bar {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 12px 15px;
+    gap: 10px;
+  }
+  
+  .alert-indicator-card {
+    padding: 15px 18px;
+    gap: 15px;
+  }
+  
+  .alert-indicator-card .metric-num {
+    font-size: 28px;
+  }
+  
+  .alert-indicator-card .metric-desc {
+    font-size: 12px;
+  }
+  
+  .alert-indicator-card .card-icon {
+    width: 42px;
+    height: 42px;
+  }
+  
+  .alert-indicator-card .card-icon i {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .kanban-column {
+    max-height: calc(100dvh - 380px);
+  }
+}
+
+@media (max-width: 576px) {
+  .deadline-alerts-bar {
+    grid-template-columns: 1fr;
+  }
+  
+  .adv-filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .filter-wrapper {
+    width: 100%;
+  }
+  
+  .section-actions-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .section-actions-row button {
+    width: 100%;
+  }
 }
