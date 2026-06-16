@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ávila e Souza Advogados - Central de Prazos</title>
+  
+  <!-- Fontes Corporativas (Outfit para títulos e Inter para textos) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Estilos Globais Customizados -->
+  <link rel="stylesheet" href="./src/style.css">
+  
+  <!-- CDNs das Bibliotecas Necessárias -->
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.js"></script>
+  <!-- SheetJS (Exportação Excel) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF & AutoTable (Exportação PDF) -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.6.0/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.js"></script>
+</head>
+<body>
+  <!-- Marca d'água de iniciais no plano de fundo -->
+  <div class="bg-initials-watermark">
+    <span class="initial-a">A</span>
+    <span class="initial-s">S</span>
+  </div>
+
+  <!-- ================= TELA DE LOGIN ================= -->
+  <div id="login-screen" class="login-wrapper">
+    <div class="login-background-overlay"></div>
+    <div class="login-box animate-fade-in">
+      <div class="login-logo-container">
+        <!-- Logotipo elegante das balanças da justiça em gradiente dourado -->
+        <svg class="logo-scale-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#C5A028" />
+              <stop offset="50%" stop-color="#D4AF37" />
+              <stop offset="100%" stop-color="#FFD700" />
+            </linearGradient>
+          </defs>
+          <!-- Base e mastro -->
+          <path d="M50 82 L50 25 M35 82 L65 82 M42 85 L58 85" stroke="url(#gold-grad)" stroke-width="3" stroke-linecap="round" fill="none"/>
+          <circle cx="50" cy="22" r="3.5" fill="url(#gold-grad)"/>
+          <!-- Trave superior -->
+          <path d="M22 32 L78 32" stroke="url(#gold-grad)" stroke-width="3" stroke-linecap="round" fill="none"/>
+          <!-- Pratos da balança -->
+          <!-- Esquerdo -->
+          <path d="M22 32 L15 52 L29 52 Z" stroke="url(#gold-grad)" stroke-width="1.5" fill="rgba(212,175,55,0.1)"/>
+          <path d="M22 55 L22 32" stroke="url(#gold-grad)" stroke-width="1" fill="none"/>
+          <!-- Direito -->
+          <path d="M78 32 L71 52 L85 52 Z" stroke="url(#gold-grad)" stroke-width="1.5" fill="rgba(212,175,55,0.1)"/>
+          <path d="M78 55 L78 32" stroke="url(#gold-grad)" stroke-width="1" fill="none"/>
+        </svg>
+      </div>
+      <div class="login-heading">
+        <h2>ÁVILA & SOUZA</h2>
+        <p>ADVOGADOS ASSOCIADOS</p>
+      </div>
+      
+      <form id="login-form">
+        <div class="form-control-group">
+          <label for="login-user"><i data-lucide="user"></i> Usuário / Login</label>
+          <input type="text" id="login-user" placeholder="Digite seu login" required autocomplete="username">
+        </div>
+        <div class="form-control-group">
+          <label for="login-pass"><i data-lucide="lock"></i> Senha</label>
+          <input type="password" id="login-pass" placeholder="Digite sua senha" required autocomplete="current-password">
+        </div>
+        
+        <button type="submit" class="btn-action-primary btn-login">
+          <span>Acessar o Sistema</span>
+          <i data-lucide="log-in"></i>
+        </button>
+      </form>
+      
+      <div class="login-demo-helpers">
+        <p>Para testes rápidos:</p>
+        <div class="demo-buttons">
+          <button type="button" class="btn-demo-quick" onclick="document.getElementById('login-user').value='admin'; document.getElementById('login-pass').value='123';">Admin (Master)</button>
+        </div>
+      </div>
+      
+      <div class="login-box-footer">
+        Central de Prazos Processuais &bull; &copy; 2026
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TELA PRINCIPAL (APP CONTAINER) ================= -->
+  <div id="app-screen" class="app-wrapper" style="display: none;">
+    
+    <!-- BARRA LATERAL (SIDEBAR) -->
+    <aside id="app-sidebar" class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">
+          <svg class="brand-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 82 L50 25 M35 82 L65 82 M22 32 L78 32" stroke="url(#gold-grad)" stroke-width="4.5" stroke-linecap="round"/>
+            <path d="M22 32 L15 52 L29 52 Z M78 32 L71 52 L85 52 Z" stroke="url(#gold-grad)" stroke-width="2.5" fill="rgba(212,175,55,0.2)"/>
+          </svg>
+          <div class="brand-text">
+            <span class="firm-title">ÁVILA & SOUZA</span>
+            <span class="firm-subtitle">ADVOGADOS</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- MENU DE NAVEGAÇÃO -->
+      <nav class="sidebar-navigation">
+        <ul class="nav-list">
+          <li class="nav-item active" data-target="dashboard">
+            <a href="#" class="nav-link">
+              <i data-lucide="kanban-square"></i>
+              <span>Painel de Prazos</span>
+            </a>
+          </li>
+          <li class="nav-item" data-target="processos">
+            <a href="#" class="nav-link">
+              <i data-lucide="folder-kanban"></i>
+              <span>Processos & Clientes</span>
+            </a>
+          </li>
+          <li class="nav-item" data-target="prazoscumpridos">
+            <a href="#" class="nav-link">
+              <i data-lucide="check-circle2"></i>
+              <span>Prazos Cumpridos</span>
+            </a>
+          </li>
+          <li class="nav-item" data-target="usuarios" id="nav-item-usuarios" style="display: none;">
+            <a href="#" class="nav-link">
+              <i data-lucide="users-round"></i>
+              <span>Gerenciar Usuários</span>
+            </a>
+          </li>
+          <li class="nav-item" data-target="configuracoes">
+            <a href="#" class="nav-link">
+              <i data-lucide="settings-2"></i>
+              <span>Configurações</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+      
+      <!-- RODAPÉ DA SIDEBAR (DADOS DO USUÁRIO LOGADO) -->
+      <div class="sidebar-user-card">
+        <div class="user-avatar-initials" id="user-avatar">AD</div>
+        <div class="user-info-text">
+          <span class="logged-user-name" id="user-display-name">Carregando...</span>
+          <span class="logged-user-role" id="user-display-role">Cargo</span>
+        </div>
+        <button id="btn-logout-sidebar" class="btn-logout" title="Sair do Sistema">
+          <i data-lucide="log-out"></i>
+        </button>
+      </div>
+    </aside>
+    
+    <!-- ÁREA DE CONTEÚDO PRINCIPAL -->
+    <main class="main-viewport">
+      
+      <!-- CABEÇALHO SUPERIOR (TOPBAR) -->
+      <header class="topbar">
+        <div class="topbar-left-brand">
+          <h1 id="topbar-view-title">Painel de Prazos</h1>
+          <p id="topbar-view-subtitle">ÁVILA E SOUZA ADVOGADOS ASSOCIADOS</p>
+        </div>
+        
+        <div class="topbar-right-controls">
+          <!-- Busca Global Rápida -->
+          <div class="search-box-global" id="global-search-wrapper">
+            <i data-lucide="search"></i>
+            <input type="text" id="global-search-input" placeholder="Pesquisar por cliente, processo, telefone...">
+          </div>
+          
+          <!-- Indicador de Banco de Dados -->
+          <div class="connection-status-badge offline-mode" id="db-connection-badge">
+            <i data-lucide="database"></i>
+            <span id="db-connection-text">Modo Local Offline</span>
+          </div>
+        </div>
+      </header>
+      
+      <!-- ================= PAINEL DE METRICAS E ALERTAS AUTOMÁTICOS (TOP) ================= -->
+      <section class="deadline-alerts-bar">
+        <div class="alert-indicator-card expired-card" title="Prazos vencidos">
+          <div class="card-icon"><i data-lucide="alert-octagon"></i></div>
+          <div class="card-metric-info">
+            <span class="metric-num" id="metric-expired">0</span>
+            <span class="metric-desc">Prazos Vencidos</span>
+          </div>
+        </div>
+        <div class="alert-indicator-card red-card" title="Faltam 2 dias ou menos">
+          <div class="card-icon"><i data-lucide="flame"></i></div>
+          <div class="card-metric-info">
+            <span class="metric-num" id="metric-red">0</span>
+            <span class="metric-desc">Urgência (≤ 2 dias)</span>
+          </div>
+        </div>
+        <div class="alert-indicator-card yellow-card" title="Faltam de 3 a 5 dias">
+          <div class="card-icon"><i data-lucide="alert-circle"></i></div>
+          <div class="card-metric-info">
+            <span class="metric-num" id="metric-yellow">0</span>
+            <span class="metric-desc">Atenção (3 a 5 dias)</span>
+          </div>
+        </div>
+        <div class="alert-indicator-card green-card" title="Faltam de 6 a 10 dias">
+          <div class="card-icon"><i data-lucide="check-circle"></i></div>
+          <div class="card-metric-info">
+            <span class="metric-num" id="metric-green">0</span>
+            <span class="metric-desc">Monitoramento (6 a 10 dias)</span>
+          </div>
+        </div>
+        <div class="alert-indicator-card blue-card" title="Faltam de 11 a 15 dias">
+          <div class="card-icon"><i data-lucide="info"></i></div>
+          <div class="card-metric-info">
+            <span class="metric-num" id="metric-blue">0</span>
+            <span class="metric-desc">Planejados (11 a 15 dias)</span>
+          </div>
+        </div>
+      </section>
+      
+      <!-- CONTEÚDO DINÂMICO DAS TABAS -->
+      <div class="app-views-container">
+        
+        <!-- 1. ABA DASHBOARD (KANBAN DE ADVOGADOS) -->
+        <section id="tab-dashboard" class="app-tab-view active">
+          <div class="kanban-wrapper">
+            
+            <!-- COLUNA DRA. REGINA -->
+            <div class="kanban-column" data-lawyer="Dra. Regina">
+              <div class="column-header">
+                <div class="lawyer-avatar init-regina">DR</div>
+                <div class="lawyer-meta">
+                  <h3>Dra. Regina</h3>
+                  <span>Sócia Executiva</span>
+                </div>
+                <span class="column-badge-count" id="count-regina">0</span>
+              </div>
+              <div class="column-cards-container" id="cards-regina">
+                <!-- Cards injetados via JS -->
+              </div>
+            </div>
+            
+            <!-- COLUNA DR. ELOI -->
+            <div class="kanban-column" data-lawyer="Dr. Eloi">
+              <div class="column-header">
+                <div class="lawyer-avatar init-eloi">DE</div>
+                <div class="lawyer-meta">
+                  <h3>Dr. Eloi</h3>
+                  <span>Sócio Executivo</span>
+                </div>
+                <span class="column-badge-count" id="count-eloi">0</span>
+              </div>
+              <div class="column-cards-container" id="cards-eloi">
+                <!-- Cards injetados via JS -->
+              </div>
+            </div>
+            
+            <!-- COLUNA WALISSON -->
+            <div class="kanban-column" data-lawyer="Walisson">
+              <div class="column-header">
+                <div class="lawyer-avatar init-walisson">WA</div>
+                <div class="lawyer-meta">
+                  <h3>Walisson</h3>
+                  <span>Advogado Associado</span>
+                </div>
+                <span class="column-badge-count" id="count-walisson">0</span>
+              </div>
+              <div class="column-cards-container" id="cards-walisson">
+                <!-- Cards injetados via JS -->
+              </div>
+            </div>
+            
+            <!-- COLUNA ANDREIA -->
+            <div class="kanban-column" data-lawyer="Andreia">
+              <div class="column-header">
+                <div class="lawyer-avatar init-andreia">AN</div>
+                <div class="lawyer-meta">
+                  <h3>Andreia</h3>
+                  <span>Advogada Associada</span>
+                </div>
+                <span class="column-badge-count" id="count-andreia">0</span>
+              </div>
+              <div class="column-cards-container" id="cards-andreia">
+                <!-- Cards injetados via JS -->
+              </div>
+            </div>
+            
+            <!-- COLUNA IZA -->
+            <div class="kanban-column" data-lawyer="Iza">
+              <div class="column-header">
+                <div class="lawyer-avatar init-iza">IZ</div>
+                <div class="lawyer-meta">
+                  <h3>Iza</h3>
+                  <span>Advogada Associada</span>
+                </div>
+                <span class="column-badge-count" id="count-iza">0</span>
+              </div>
+              <div class="column-cards-container" id="cards-iza">
+                <!-- Cards injetados via JS -->
+              </div>
+            </div>
+            
+          </div>
+        </section>
+        
+        <!-- 2. ABA PROCESSOS & CLIENTES (TABELA GERAL) -->
+        <section id="tab-processos" class="app-tab-view">
+          <div class="section-actions-row">
+            <div class="adv-filters-bar">
+              <div class="filter-wrapper" style="flex-grow: 1;">
+                <label for="filter-text">Busca por Texto</label>
+                <input type="text" id="filter-text" placeholder="Filtrar por nome, processo ou telefone...">
+              </div>
+              <div class="filter-wrapper">
+                <label for="filter-lawyer">Advogado</label>
+                <select id="filter-lawyer">
+                  <option value="Todos">Todos os Advogados</option>
+                  <option value="Dra. Regina">Dra. Regina</option>
+                  <option value="Dr. Eloi">Dr. Eloi</option>
+                  <option value="Walisson">Walisson</option>
+                  <option value="Andreia">Andreia</option>
+                  <option value="Iza">Iza</option>
+                </select>
+              </div>
+              <div class="filter-wrapper">
+                <label for="filter-status">Status</label>
+                <select id="filter-status">
+                  <option value="Todos">Todos os Status</option>
+                  <option value="Pendente">Pendente</option>
+                  <option value="Em Andamento">Em Andamento</option>
+                  <option value="Prazo Cumprido">Prazo Cumprido</option>
+                  <option value="Protocolado">Protocolado</option>
+                  <option value="Concluído">Concluído</option>
+                </select>
+              </div>
+              <div class="filter-wrapper">
+                <label for="filter-urgency">Prazo / Urgência</label>
+                <select id="filter-urgency">
+                  <option value="Todos">Qualquer Prazo</option>
+                  <option value="Vencido">Apenas Vencidos</option>
+                  <option value="Vermelho">Urgentes (≤ 2 dias)</option>
+                  <option value="Amarelo">Atenção (3 a 5 dias)</option>
+                  <option value="Verde">Monitorados (6 a 10 dias)</option>
+                  <option value="Azul">Planejados (11 a 15 dias)</option>
+                </select>
+              </div>
+              <div class="filter-buttons">
+                <button type="button" id="btn-clear-filters" class="btn-action-secondary" title="Limpar Filtros">
+                  <i data-lucide="rotate-ccw"></i>
+                </button>
+              </div>
+            </div>
+            
+            <button type="button" id="btn-open-create-process" class="btn-action-primary">
+              <i data-lucide="plus-circle"></i>
+              <span>Novo Processo</span>
+            </button>
+          </div>
+          
+          <div class="data-table-container">
+            <table class="corporate-data-table" id="table-processos">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Nº Processo</th>
+                  <th>Telefone</th>
+                  <th>Responsável</th>
+                  <th>Data Cadastro</th>
+                  <th>Data Limite</th>
+                  <th>Prazo Restante</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="table-processos-body">
+                <!-- Injetado dinamicamente -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+        
+        <!-- 3. ABA PRAZOS CUMPRIDOS -->
+        <section id="tab-prazoscumpridos" class="app-tab-view">
+          <div class="section-actions-row">
+            <div class="search-box-global" style="max-width: 400px; margin: 0;">
+              <i data-lucide="search"></i>
+              <input type="text" id="prazoscumpridos-search-input" placeholder="Pesquisar prazos cumpridos por cliente, processo...">
+            </div>
+            <p class="section-helper-text">Listagem de todos os prazos cumpridos no sistema.</p>
+          </div>
+          
+          <div class="data-table-container">
+            <table class="corporate-data-table" id="table-prazoscumpridos">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Nº Processo</th>
+                  <th>Responsável</th>
+                  <th>Data Cadastro</th>
+                  <th>Data Limite</th>
+                  <th>Cumprido Em</th>
+                  <th>Cumprido Por</th>
+                  <th style="text-align: right;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="table-prazoscumpridos-body">
+                <!-- Injetado dinamicamente -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+        
+        <!-- 5. ABA GERENCIAMENTO DE USUÁRIOS (ADMIN ONLY) -->
+        <section id="tab-usuarios" class="app-tab-view">
+          <div class="section-actions-row" style="justify-content: flex-end;">
+            <button type="button" id="btn-open-create-user" class="btn-action-primary">
+              <i data-lucide="user-plus"></i>
+              <span>Cadastrar Novo Usuário</span>
+            </button>
+          </div>
+          
+          <div class="data-table-container">
+            <table class="corporate-data-table" id="table-usuarios">
+              <thead>
+                <tr>
+                  <th>Nome Completo</th>
+                  <th>E-mail</th>
+                  <th>Nome de Usuário (Login)</th>
+                  <th>Cargo / Permissão</th>
+                  <th>Cadastrado Em</th>
+                  <th style="text-align: right;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="table-usuarios-body">
+                <!-- Injetado dinamicamente -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+        
+        <!-- 6. ABA CONFIGURAÇÕES -->
+        <section id="tab-configuracoes" class="app-tab-view">
+          <div class="settings-layout-grid">
+            
+            <!-- Bloco 1: Conexão Supabase -->
+            <div class="corporate-settings-card">
+              <div class="card-header-styled">
+                <i data-lucide="database-backup"></i>
+                <h3>Conexão com Banco de Dados Supabase</h3>
+              </div>
+              <div class="card-body-styled">
+                <div class="settings-alert-badge disconnected" id="config-conn-alert">
+                  <i data-lucide="unplug"></i>
+                  <div>
+                    <strong>Modo Offline Ativo</strong>
+                    <p>Os dados estão sendo armazenados localmente no navegador. Insira as credenciais abaixo para migrar e sincronizar com o banco centralizado em nuvem.</p>
+                  </div>
+                </div>
+                
+                <form id="form-settings-supabase">
+                  <div class="form-control-group">
+                    <label for="settings-supabase-url">URL do Projeto Supabase</label>
+                    <input type="url" id="settings-supabase-url" placeholder="Ex: https://xxxxxxxxx.supabase.co">
+                  </div>
+                  <div class="form-control-group">
+                    <label for="settings-supabase-key">Chave de API Pública (Anon Key)</label>
+                    <input type="password" id="settings-supabase-key" placeholder="Digite a chave anon key do Supabase">
+                  </div>
+                  
+                  <div class="settings-form-actions">
+                    <button type="submit" class="btn-action-primary">
+                      <i data-lucide="link-2"></i> Conectar Banco de Dados
+                    </button>
+                    <button type="button" id="btn-disconnect-db" class="btn-action-secondary" style="display: none;">
+                      Desconectar
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            
+            <!-- Bloco 2: Segurança & Backup -->
+            <div class="corporate-settings-card">
+              <div class="card-header-styled">
+                <i data-lucide="shield-check"></i>
+                <h3>Segurança, Backup e Recuperação</h3>
+              </div>
+              <div class="card-body-styled">
+                <p class="settings-block-desc">
+                  O sistema executa backups diários automaticamente no navegador. Em caso de necessidade, você pode baixar o backup completo manualmente ou restaurar a base de dados a partir de um arquivo JSON anteriormente gerado.
+                </p>
+                
+                <div class="backup-meta-info">
+                  <span>Último backup automático local:</span>
+                  <strong id="backup-last-time">Nunca</strong>
+                </div>
+                
+                <div class="backup-action-buttons">
+                  <button type="button" id="btn-download-backup" class="btn-action-secondary">
+                    <i data-lucide="download"></i> Baixar Backup Completo
+                  </button>
+                  
+                  <label class="btn-action-secondary restore-btn-label">
+                    <i data-lucide="upload"></i> Restaurar do Arquivo
+                    <input type="file" id="input-restore-backup" accept=".json" style="display: none;">
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Bloco 3: Sobre o Sistema -->
+            <div class="corporate-settings-card" style="grid-column: span 2;">
+              <div class="card-header-styled">
+                <i data-lucide="info"></i>
+                <h3>Sobre o Sistema Jurídico - Ávila e Souza</h3>
+              </div>
+              <div class="card-body-styled">
+                <p>
+                  <strong>Sistema de Gestão de Prazos Processuais v1.0.0</strong><br>
+                  Central corporativa para acompanhamento ágil de prazos de defesa, cumprimento de sentenças e expedientes processuais. Desenvolvido sob rígidos padrões de segurança e rastreabilidade com auditoria interna contínua.
+                </p>
+                <p style="margin-top: 10px; font-size: 12.5px; color: var(--text-muted);">
+                  Cores Institucionais: Azul Escuro (Corporativo), Ouro Imperial (Justiça) e Branco (Clareza).
+                </p>
+              </div>
+            </div>
+            
+          </div>
+        </section>
+        
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= NOTIFICAÇÃO POPUP (TOASTS) ================= -->
+  <div id="toast-container" class="toast-wrapper"></div>
+
+  <!-- ================= DIÁLOGO DE NOTIFICAÇÃO INICIAL ================= -->
+  <div id="modal-welcome-alert" class="modal-overlay" style="display: none;">
+    <div class="modal-box welcome-box animate-scale-up">
+      <div class="welcome-header">
+        <i data-lucide="bell-ring"></i>
+        <h3>Aviso de Prazos Processuais</h3>
+      </div>
+      <div class="welcome-body">
+        <p id="welcome-alert-message">Buscando prazos futuros...</p>
+      </div>
+      <div class="welcome-footer">
+        <button type="button" class="btn-action-primary" onclick="document.getElementById('modal-welcome-alert').style.display='none';">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CADASTRO / EDIÇÃO DE PROCESSO ================= -->
+  <div id="modal-processo" class="modal-overlay" style="display: none;">
+    <div class="modal-box process-form-box">
+      <div class="modal-header">
+        <h3 id="process-modal-title">Novo Processo / Cliente</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-process-modal"><i data-lucide="x"></i></button>
+      </div>
+      <form id="form-processo">
+        <input type="hidden" id="process-id-input">
+        
+        <div class="modal-body">
+          <div class="form-grid-2">
+            <div class="form-control-group">
+              <label for="proc-nome-cliente">Nome do Cliente *</label>
+              <input type="text" id="proc-nome-cliente" required placeholder="Nome completo do cliente">
+            </div>
+            <div class="form-control-group">
+              <label for="proc-numero">Número do Processo</label>
+              <input type="text" id="proc-numero" placeholder="Ex: 5001234-56.2026.8.13.0024">
+            </div>
+          </div>
+          
+          <div class="form-grid-2">
+            <div class="form-control-group">
+              <label for="proc-telefone">Telefone de Contato</label>
+              <input type="text" id="proc-telefone" placeholder="Ex: (31) 98765-4321">
+            </div>
+            <div class="form-control-group">
+              <label for="proc-advogado">Advogado Responsável *</label>
+              <select id="proc-advogado" required>
+                <option value="" disabled selected>Selecione o Advogado</option>
+                <option value="Dra. Regina">Dra. Regina</option>
+                <option value="Dr. Eloi">Dr. Eloi</option>
+                <option value="Walisson">Walisson</option>
+                <option value="Andreia">Andreia</option>
+                <option value="Iza">Iza</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-grid-2">
+            <div class="form-control-group">
+              <label for="proc-data-limite">Data Limite do Prazo *</label>
+              <input type="date" id="proc-data-limite" required>
+            </div>
+            <div class="form-control-group">
+              <label for="proc-status">Status do Processo</label>
+              <select id="proc-status">
+                <option value="Pendente" selected>Pendente</option>
+                <option value="Em Andamento">Em Andamento</option>
+                <option value="Prazo Cumprido">Prazo Cumprido</option>
+                <option value="Protocolado">Protocolado</option>
+                <option value="Concluído">Concluído</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-control-group">
+            <label for="proc-observacoes">Observações / Detalhes do Prazo</label>
+            <textarea id="proc-observacoes" rows="4" placeholder="Descreva detalhes sobre a ação do prazo, objeto do processo ou pendências..."></textarea>
+          </div>
+
+          <!-- Container de histórico do processo existente (oculto por padrão) -->
+          <div id="proc-existente-historico" style="display: none; margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 15px;">
+            <h4 style="font-size: 12.5px; color: var(--gold-primary); text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+              <i data-lucide="history" style="width: 16px; height: 16px;"></i>
+              Histórico de Prazos deste Processo
+            </h4>
+            <div id="proc-existente-timeline" style="max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.15); border-radius: 8px; border: 1px solid var(--border-color); padding: 12px; font-size: 12px; line-height: 1.5; color: var(--text-normal);">
+              <!-- Injetado dinamicamente -->
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn-action-secondary" id="btn-cancel-process-modal">Cancelar</button>
+          <button type="submit" class="btn-action-primary">
+            <i data-lucide="save"></i>
+            <span>Salvar Processo</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: DETALHES DO PROCESSO E HISTÓRICO PERMANENTE ================= -->
+  <div id="modal-detalhes-processo" class="modal-overlay" style="display: none;">
+    <div class="modal-box process-details-box">
+      <div class="modal-header">
+        <h3 id="details-client-name">Detalhes do Processo</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-details-modal"><i data-lucide="x"></i></button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="details-top-info-card">
+          <div class="info-block">
+            <span>Nº do Processo:</span>
+            <strong id="details-process-number">-</strong>
+          </div>
+          <div class="info-block">
+            <span>Telefone:</span>
+            <strong id="details-phone">-</strong>
+          </div>
+          <div class="info-block">
+            <span>Advogado Responsável:</span>
+            <strong id="details-lawyer">-</strong>
+          </div>
+          <div class="info-block">
+            <span>Status:</span>
+            <span class="badge" id="details-status-badge">Pendente</span>
+          </div>
+          <div class="info-block">
+            <span>Data de Cadastro:</span>
+            <strong id="details-created-at">-</strong>
+          </div>
+          <div class="info-block">
+            <span>Data Limite do Prazo:</span>
+            <strong id="details-deadline">-</strong>
+          </div>
+        </div>
+        
+        <div class="details-desc-block">
+          <h4>Observações do Processo</h4>
+          <p id="details-observations" class="observations-text-view">Sem observações cadastradas.</p>
+        </div>
+        
+        <hr class="details-divider">
+        
+        <div class="details-history-timeline-section">
+          <h4>Histórico de Movimentações (Inalterável)</h4>
+          <div class="timeline-scroll-container" id="details-timeline-container">
+            <!-- Linha do tempo inserida via JS -->
+          </div>
+          
+          <form id="form-add-timeline-note" class="add-note-timeline-form">
+            <label for="timeline-note-input">Registrar Nova Movimentação / Andamento</label>
+            <div class="note-input-group">
+              <input type="text" id="timeline-note-input" required placeholder="Digite uma anotação de andamento para o processo...">
+              <button type="submit" class="btn-action-primary">
+                <i data-lucide="send"></i>
+                <span>Registrar</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn-action-secondary" id="btn-close-details-modal-footer">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CADASTRO / EDIÇÃO DE USUÁRIO (ADMIN ONLY) ================= -->
+  <div id="modal-usuario" class="modal-overlay" style="display: none;">
+    <div class="modal-box user-form-box">
+      <div class="modal-header">
+        <h3 id="user-modal-title">Cadastrar Novo Usuário</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-user-modal"><i data-lucide="x"></i></button>
+      </div>
+      <form id="form-usuario">
+        <input type="hidden" id="user-id-input">
+        
+        <div class="modal-body">
+          <div class="form-control-group">
+            <label for="user-nome-completo">Nome Completo *</label>
+            <input type="text" id="user-nome-completo" required placeholder="Nome do profissional">
+          </div>
+          <div class="form-control-group">
+            <label for="user-email">E-mail *</label>
+            <input type="email" id="user-email" required placeholder="Ex: regina@aviladesouza.adv.br">
+          </div>
+          
+          <div class="form-grid-2">
+            <div class="form-control-group">
+              <label for="user-username">Nome de Usuário (Login) *</label>
+              <input type="text" id="user-username" required placeholder="Ex: reginasilva">
+            </div>
+            <div class="form-control-group">
+              <label for="user-permission">Nível de Permissão / Cargo *</label>
+              <select id="user-permission" required>
+                <option value="Operador" selected>Operador (Comum)</option>
+                <option value="Administrador">Administrador (Master)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-control-group">
+            <label for="user-pass">Senha * <span class="help-label-pass" style="font-size: 11px; color: var(--text-muted); display: none;">(Deixe em branco para manter a senha atual)</span></label>
+            <input type="password" id="user-pass" required placeholder="Digite a senha de acesso">
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn-action-secondary" id="btn-cancel-user-modal">Cancelar</button>
+          <button type="submit" class="btn-action-primary">
+            <i data-lucide="user-plus"></i>
+            <span id="user-submit-text">Cadastrar Usuário</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Script Principal SPA -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

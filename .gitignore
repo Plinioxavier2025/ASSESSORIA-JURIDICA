@@ -1,0 +1,10 @@
+# Dependências do npm
+node_modules/
+
+# Arquivos de senha e credenciais
+*SENHA*.txt
+.env
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
