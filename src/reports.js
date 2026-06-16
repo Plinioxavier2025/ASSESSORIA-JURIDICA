@@ -160,7 +160,7 @@ export async function exportarPDFRelatorio(filtros) {
   doc.setTextColor(212, 175, 55);
   doc.setFontSize(18);
   doc.setFont('Helvetica', 'bold');
-  doc.text("ÁVILA & SOUZA ADVOGADOS ASSOCIADOS", 15, 13);
+  doc.text("ÁVILA & SOUZA ADVOGADOS", 15, 13);
 
   // Subtítulo em Branco
   doc.setTextColor(255, 255, 255);
