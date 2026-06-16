@@ -971,6 +971,33 @@ const inicializarApp = async () => {
     });
   }
 
+  // 12. Clique nos cards de métricas do topo para filtrar na tabela de processos
+  const cardsMetricas = [
+    { classe: '.expired-card', filtro: 'Vencido' },
+    { classe: '.red-card', filtro: 'Vermelho' },
+    { classe: '.yellow-card', filtro: 'Amarelo' },
+    { classe: '.green-card', filtro: 'Verde' },
+    { classe: '.blue-card', filtro: 'Azul' }
+  ];
+
+  cardsMetricas.forEach(item => {
+    const cardEl = document.querySelector(item.classe);
+    if (cardEl) {
+      cardEl.addEventListener('click', () => {
+        // Mudar para aba de processos
+        const navProcessos = document.querySelector('.nav-item[data-target="processos"]');
+        if (navProcessos) {
+          navProcessos.click();
+        }
+        // Definir filtro de urgência e atualizar
+        const selectUrgencia = document.getElementById('filter-urgency');
+        if (selectUrgencia) {
+          selectUrgencia.value = item.filtro;
+          atualizarTelas();
+        }
+      });
+    }
+  });
 
   // 13. Usuários - Cadastrar / Salvar
   document.getElementById('btn-open-create-user').addEventListener('click', () => {

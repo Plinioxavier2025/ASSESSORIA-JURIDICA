@@ -581,6 +581,7 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 10px 35px 0 rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
 }
 
 .alert-indicator-card:hover {
