@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS processos (
     data_cadastro DATE DEFAULT CURRENT_DATE NOT NULL,
     data_limite DATE NOT NULL,
     status_processo TEXT NOT NULL CHECK (status_processo IN ('Pendente', 'Em Andamento', 'Prazo Cumprido', 'Protocolado', 'Concluído')),
+    prazo_concluido BOOLEAN DEFAULT FALSE NOT NULL,
     concluido_por TEXT, -- Nome do usuário que concluiu
     concluido_em TIMESTAMP WITH TIME ZONE, -- Data e hora de conclusão do prazo
     criado_por TEXT NOT NULL, -- Nome do usuário criador
