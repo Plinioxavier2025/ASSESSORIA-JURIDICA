@@ -352,7 +352,7 @@ export async function addUsuario(usuarioData, currentUser) {
 
   if (!novoUsuario) {
     const usuarios = getLocalTable('usuarios', DEFAULT_USERS);
-    if (usuarios.some(u => u.login === usuarioData.login || u.email === usuarioData.email)) {
+    if (usuarios.some(u => u.login === usuarioData.login || (usuarioData.email && u.email === usuarioData.email))) {
       throw new Error("Usuário (login) ou E-mail já cadastrado!");
     }
     novoUsuario = {

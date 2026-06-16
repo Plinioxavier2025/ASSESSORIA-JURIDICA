@@ -989,10 +989,14 @@ const inicializarApp = async () => {
     e.preventDefault();
     const id = document.getElementById('user-id-input').value;
     const nome = document.getElementById('user-nome-completo').value.trim();
-    const email = document.getElementById('user-email').value.trim();
+    let email = document.getElementById('user-email').value.trim();
     const loginName = document.getElementById('user-username').value.trim();
     const cargo = document.getElementById('user-permission').value;
     const senha = document.getElementById('user-pass').value;
+
+    if (!email) {
+      email = `${loginName.toLowerCase()}@sememail.com`;
+    }
 
     const payload = { nome, email, login: loginName, cargo };
 
