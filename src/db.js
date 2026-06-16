@@ -13,8 +13,16 @@ export function initSupabase(url, key) {
         console.error("Biblioteca cliente do Supabase não encontrada no escopo window.");
         return false;
       }
-      supabase = window.supabase.createClient(url, key);
-      localStorage.setItem('as_supabase_url', url);
+      
+      // Sanitizar a URL (remover barra no final e /rest/v1 se houver)
+      let sanitizedUrl = url.trim().replace(/\/+$/, "");
+      if (sanitizedUrl.endsWith("/rest/v1")) {
+        sanitizedUrl = sanitizedUrl.substring(0, sanitizedUrl.length - 8);
+      }
+      sanitizedUrl = sanitizedUrl.replace(/\/+$/, "");
+
+      supabase = window.supabase.createClient(sanitizedUrl, key);
+      localStorage.setItem('as_supabase_url', sanitizedUrl);
       localStorage.setItem('as_supabase_key', key);
       return true;
     } catch (e) {
