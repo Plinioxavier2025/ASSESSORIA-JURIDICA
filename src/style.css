@@ -93,7 +93,12 @@ h1, h2, h3, h4, h5, h6 {
   left: 0;
   width: 100%;
   height: 100%;
-  background: #09020e;
+  background: #080001;
+  background-image: 
+    radial-gradient(rgba(255, 0, 0, 0.15) 1px, transparent 0),
+    radial-gradient(rgba(255, 0, 0, 0.1) 2px, transparent 0);
+  background-size: 40px 40px;
+  background-position: 0 0, 20px 20px;
   overflow: hidden;
   z-index: -1;
 }
@@ -102,44 +107,60 @@ h1, h2, h3, h4, h5, h6 {
 .login-background-overlay::after {
   content: "";
   position: absolute;
-  width: 450px;
-  height: 450px;
+  width: 600px;
+  height: 600px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.28) 0%, rgba(0, 0, 0, 0) 70%);
-  filter: blur(60px);
-  animation: floatBlur 20s infinite alternate ease-in-out;
+  background: radial-gradient(circle, rgba(255, 10, 30, 0.24) 0%, rgba(180, 0, 10, 0.05) 50%, rgba(0, 0, 0, 0) 70%);
+  filter: blur(80px);
+  animation: floatBlur1 25s infinite alternate ease-in-out;
 }
 
 .login-background-overlay::before {
-  top: -10%;
-  left: -10%;
+  top: -15%;
+  left: -15%;
 }
 
 .login-background-overlay::after {
-  bottom: -10%;
-  right: -10%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(0, 0, 0, 0) 70%);
-  animation-delay: -10s;
+  bottom: -15%;
+  right: -15%;
+  background: radial-gradient(circle, rgba(180, 0, 10, 0.20) 0%, rgba(255, 50, 50, 0.05) 50%, rgba(0, 0, 0, 0) 70%);
+  animation-delay: -12s;
+  animation-name: floatBlur2;
 }
 
-@keyframes floatBlur {
+@keyframes floatBlur1 {
   0% {
     transform: translate(0, 0) scale(1);
   }
+  50% {
+    transform: translate(80px, 50px) scale(1.15);
+  }
   100% {
-    transform: translate(60px, 40px) scale(1.15);
+    transform: translate(-40px, 90px) scale(0.9);
+  }
+}
+
+@keyframes floatBlur2 {
+  0% {
+    transform: translate(0, 0) scale(1.1);
+  }
+  50% {
+    transform: translate(-90px, -60px) scale(0.95);
+  }
+  100% {
+    transform: translate(50px, -30px) scale(1.2);
   }
 }
 
 .login-box {
-  background: rgba(18, 5, 28, 0.65);
-  border: 1.5px solid rgba(168, 85, 247, 0.35);
+  background: rgba(18, 3, 5, 0.75);
+  border: 1.5px solid rgba(255, 51, 51, 0.35);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   width: 420px;
   padding: 40px 30px;
   border-radius: 16px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 35px rgba(168, 85, 247, 0.15);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 35px rgba(255, 51, 51, 0.15);
   text-align: center;
 }
 
@@ -152,7 +173,7 @@ h1, h2, h3, h4, h5, h6 {
 .logo-scale-svg {
   width: 75px;
   height: 75px;
-  filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.45));
+  filter: drop-shadow(0 0 12px rgba(255, 26, 26, 0.6));
   transition: var(--transition-smooth);
 }
 
@@ -164,8 +185,8 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 26px;
   font-weight: 800;
   letter-spacing: 2px;
-  color: #e9d5ff;
-  text-shadow: 0 0 12px rgba(168, 85, 247, 0.5);
+  color: #ff1a1a;
+  text-shadow: 0 0 15px rgba(255, 26, 26, 0.8), 0 0 3px rgba(255, 26, 26, 0.5);
   margin-bottom: 2px;
 }
 
@@ -173,7 +194,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-title);
   font-size: 11px;
   letter-spacing: 4px;
-  color: #c084fc;
+  color: #ff6666;
   text-transform: uppercase;
   margin-bottom: 30px;
   font-weight: 700;
@@ -304,9 +325,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-demo-quick {
-  background: rgba(168, 85, 247, 0.08);
-  border: 1px solid rgba(168, 85, 247, 0.35);
-  color: #c084fc;
+  background: rgba(255, 51, 51, 0.08);
+  border: 1px solid rgba(255, 51, 51, 0.35);
+  color: #ff6666;
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 11px;
@@ -316,25 +337,25 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-demo-quick:hover {
-  background: #a855f7;
+  background: #ff3333;
   color: var(--text-white);
-  border-color: #a855f7;
+  border-color: #ff3333;
 }
 
 .login-box .form-control-group input:focus {
-  border-color: #a855f7;
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.25);
+  border-color: #ff3333;
+  box-shadow: 0 0 0 3px rgba(255, 51, 51, 0.25);
 }
 
 .btn-login {
-  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%) !important;
+  background: linear-gradient(135deg, #990000 0%, #ff1a1a 50%, #ff5555 100%) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3) !important;
+  box-shadow: 0 4px 15px rgba(255, 26, 26, 0.35) !important;
 }
 
 .btn-login:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5) !important;
+  box-shadow: 0 6px 20px rgba(255, 26, 26, 0.6) !important;
 }
 
 .login-box-footer {
