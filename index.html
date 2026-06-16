@@ -447,45 +447,8 @@
         <section id="tab-configuracoes" class="app-tab-view">
           <div class="settings-layout-grid">
             
-            <!-- Bloco 1: Conexão Supabase -->
-            <div class="corporate-settings-card">
-              <div class="card-header-styled">
-                <i data-lucide="database-backup"></i>
-                <h3>Conexão com Banco de Dados Supabase</h3>
-              </div>
-              <div class="card-body-styled">
-                <div class="settings-alert-badge disconnected" id="config-conn-alert">
-                  <i data-lucide="unplug"></i>
-                  <div>
-                    <strong>Modo Offline Ativo</strong>
-                    <p>Os dados estão sendo armazenados localmente no navegador. Insira as credenciais abaixo para migrar e sincronizar com o banco centralizado em nuvem.</p>
-                  </div>
-                </div>
-                
-                <form id="form-settings-supabase">
-                  <div class="form-control-group">
-                    <label for="settings-supabase-url">URL do Projeto Supabase</label>
-                    <input type="url" id="settings-supabase-url" placeholder="Ex: https://xxxxxxxxx.supabase.co">
-                  </div>
-                  <div class="form-control-group">
-                    <label for="settings-supabase-key">Chave de API Pública (Anon Key)</label>
-                    <input type="password" id="settings-supabase-key" placeholder="Digite a chave anon key do Supabase">
-                  </div>
-                  
-                  <div class="settings-form-actions">
-                    <button type="submit" class="btn-action-primary">
-                      <i data-lucide="link-2"></i> Conectar Banco de Dados
-                    </button>
-                    <button type="button" id="btn-disconnect-db" class="btn-action-secondary" style="display: none;">
-                      Desconectar
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-            
             <!-- Bloco 2: Segurança & Backup -->
-            <div class="corporate-settings-card">
+            <div class="corporate-settings-card" style="grid-column: span 2;">
               <div class="card-header-styled">
                 <i data-lucide="shield-check"></i>
                 <h3>Segurança, Backup e Recuperação</h3>

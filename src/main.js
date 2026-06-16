@@ -536,40 +536,12 @@ window.deletarUsuarioSistema = async function (id, nome) {
 
 // RENDERIZAR CONFIGURAÇÕES E CREDENCIAIS SUPABASE (ABA 6)
 function renderizarConfiguracoes() {
-  const creds = getSupabaseCredentials();
-  document.getElementById('settings-supabase-url').value = creds.url;
-  document.getElementById('settings-supabase-key').value = creds.key;
-
-  const isConnected = isSupabaseConnected();
-  const formAlert = document.getElementById('config-conn-alert');
-  const btnDisconnect = document.getElementById('btn-disconnect-db');
-
-  if (isConnected) {
-    formAlert.className = 'settings-alert-badge connected';
-    formAlert.innerHTML = `
-      <i data-lucide="shield-check"></i>
-      <div>
-        <strong>Supabase Conectado com Sucesso</strong>
-        <p>A central está sincronizando e lendo dados diretamente do banco de dados na nuvem.</p>
-      </div>
-    `;
-    btnDisconnect.style.display = 'inline-flex';
-  } else {
-    formAlert.className = 'settings-alert-badge disconnected';
-    formAlert.innerHTML = `
-      <i data-lucide="unplug"></i>
-      <div>
-        <strong>Modo Offline Ativo (Local)</strong>
-        <p>Os dados estão sendo salvos apenas no seu navegador. Insira as credenciais abaixo para conectar a um banco real.</p>
-      </div>
-    `;
-    btnDisconnect.style.display = 'none';
-  }
-
   // Backup data
   const lastBackup = localStorage.getItem('as_last_backup_time') || 'Nunca';
-  document.getElementById('backup-last-time').textContent = lastBackup;
-  window.lucide.createIcons();
+  const backupEl = document.getElementById('backup-last-time');
+  if (backupEl) {
+    backupEl.textContent = lastBackup;
+  }
 }
 
 // ----------------- MODAL DE DETALHES & LINHA DO TEMPO -----------------
@@ -1057,35 +1029,7 @@ const inicializarApp = async () => {
     }
   });
 
-  // 14. Configurações - Supabase Conexão
-  document.getElementById('form-settings-supabase').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const url = document.getElementById('settings-supabase-url').value.trim();
-    const key = document.getElementById('settings-supabase-key').value.trim();
 
-    if (!url || !key) {
-      showToast("Insira a URL e a Anon Key do projeto Supabase.", "warning");
-      return;
-    }
-
-    const connected = initSupabase(url, key);
-    if (connected) {
-      await registrarAuditoria("Conexão Supabase", `Conexão configurada para a URL: ${url}`, getCurrentUser());
-      showToast("Supabase conectado com sucesso!", "success");
-      atualizarTelas();
-    } else {
-      showToast("Falha ao inicializar o cliente Supabase. Verifique se o script CDN carregou.", "error");
-    }
-  });
-
-  document.getElementById('btn-disconnect-db').addEventListener('click', async () => {
-    if (confirm("Deseja desconectar o Supabase e voltar para o Modo Simulação Local?")) {
-      disconnectSupabase();
-      await registrarAuditoria("Desconexão Supabase", "Banco desconectado manualmente. Transição para modo offline local.", getCurrentUser());
-      showToast("Supabase desconectado.");
-      atualizarTelas();
-    }
-  });
 
   // 15. Configurações - Backup Download e Recuperação
   document.getElementById('btn-download-backup').addEventListener('click', () => {
