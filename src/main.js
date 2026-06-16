@@ -113,18 +113,7 @@ export async function atualizarTelas() {
   const currentUser = getCurrentUser();
   if (!currentUser) return;
 
-  // Atualizar dados de conexão
-  const isConnected = isSupabaseConnected();
-  const dbBadge = document.getElementById('db-connection-badge');
-  const dbText = document.getElementById('db-connection-text');
 
-  if (isConnected) {
-    dbBadge.className = 'connection-status-badge online-mode';
-    dbText.textContent = 'Supabase Conectado';
-  } else {
-    dbBadge.className = 'connection-status-badge offline-mode';
-    dbText.textContent = 'Modo Local Offline';
-  }
 
   // 1. Obter Processos
   const processos = await getProcessos();
