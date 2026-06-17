@@ -140,13 +140,11 @@ export async function exportarPDFRelatorio(filtros) {
   const dados = await obterDadosFiltradosRelatorio(filtros);
 
   if (dados.length === 0) {
-    alert("Nenhum registro encontrado para exportar com os filtros atuais.");
-    return;
+    throw new Error("Nenhum registro encontrado com os filtros atuais.");
   }
 
   if (!window.jspdf) {
-    alert("Biblioteca jsPDF não carregada no escopo global.");
-    return;
+    throw new Error("Biblioteca jsPDF não carregada no escopo global.");
   }
 
   const { jsPDF } = window.jspdf;
