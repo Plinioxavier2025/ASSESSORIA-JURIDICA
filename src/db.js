@@ -648,7 +648,7 @@ export async function deleteProcesso(id, currentUser) {
   }
 
   const processos = getLocalTable('processos', DEFAULT_PROCESSES);
-  const index = procesos.findIndex(p => p.id === id);
+  const index = processos.findIndex(p => p.id === id);
   if (index !== -1) {
     const nomeCliente = processos[index].nome_cliente;
     const numProcesso = processos[index].numero_processo;
