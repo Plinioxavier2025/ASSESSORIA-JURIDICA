@@ -2066,7 +2066,7 @@ h6 {
     flex-direction: column;
     height: auto;
     padding: 15px 20px;
-    gap: 15px;
+    gap: 12px;
     align-items: stretch;
   }
 
@@ -2116,30 +2116,243 @@ h6 {
   .kanban-column {
     max-height: calc(100dvh - 380px);
   }
+
+  /* Modais Responsivos */
+  .process-form-box,
+  .user-form-box,
+  .process-details-box {
+    width: 95% !important;
+  }
 }
 
 @media (max-width: 576px) {
-  .deadline-alerts-bar {
-    grid-template-columns: 1fr;
+  /* TELA DE LOGIN RESPONSIVA */
+  .login-box {
+    width: 90% !important;
+    max-width: 420px;
+    margin: 15px;
+    padding: 30px 20px;
   }
 
-  .adv-filters-bar {
+  .login-heading h2 {
+    font-size: 24px;
+  }
+
+  .login-monogram-letter {
+    font-size: 50vw;
+  }
+
+  .letter-a {
+    transform: translate(-30%, -24%);
+  }
+
+  .letter-s {
+    transform: translate(20%, 16%);
+  }
+
+  /* ESTRUTURA MOBILE COM BOTTOM BAR (TIPO APP NATIVO) */
+  .app-wrapper {
+    grid-template-columns: 1fr !important;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    height: 65px;
+    flex-direction: row;
+    border-right: none;
+    border-top: 1px solid var(--border-color);
+    background-color: rgba(18, 3, 5, 0.96);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    z-index: 1000;
+  }
+
+  .sidebar-brand {
+    display: none !important;
+  }
+
+  .sidebar-navigation {
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow-y: hidden;
+  }
+
+  .nav-list {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+  }
+
+  .nav-item {
+    margin: 0;
+    flex-grow: 1;
+    height: 100%;
+  }
+
+  .nav-link {
     flex-direction: column;
-    align-items: stretch;
+    gap: 4px;
+    padding: 10px 0;
+    font-size: 9px;
+    border-left: none;
+    border-bottom: 3.5px solid transparent;
+    height: 100%;
+    justify-content: center;
+    color: var(--text-muted);
+  }
+
+  .nav-link i {
+    width: 18px;
+    height: 18px;
+  }
+
+  .nav-item.active .nav-link {
+    border-bottom-color: var(--gold-primary);
+    border-left-color: transparent;
+    background: rgba(212, 175, 55, 0.05);
+  }
+
+  /* User initials & logout na extremidade direita da bottom bar */
+  .sidebar-user-card {
+    border-top: none;
+    border-left: 1px solid var(--border-color);
+    background: transparent;
+    padding: 0 15px;
+    height: 100%;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .user-avatar-initials {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+  }
+
+  .logged-user-name,
+  .logged-user-role {
+    display: none !important;
+  }
+
+  .btn-logout {
+    margin: 0;
+    padding: 2px;
+  }
+
+  /* Espaçamento para o conteúdo não ficar coberto pela bottom bar */
+  .main-viewport {
+    height: 100dvh;
+    padding-bottom: 65px;
+  }
+
+  .app-views-container {
+    padding: 15px 15px 25px 15px;
+  }
+
+  /* ALERTAS EM BARRA SCROLLABLE HORIZONTAL (TIPO FINANÇAS APP) */
+  .deadline-alerts-bar {
+    display: flex !important;
+    overflow-x: auto;
+    gap: 12px;
+    padding: 12px 15px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .deadline-alerts-bar::-webkit-scrollbar {
+    display: none; /* esconde scrollbar para parecer mais nativo */
+  }
+
+  .alert-indicator-card {
+    flex: 0 0 155px;
+    padding: 12px 14px;
+    gap: 12px;
+    scroll-snap-align: start;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  }
+
+  .alert-indicator-card .card-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .alert-indicator-card .card-icon i {
+    width: 18px;
+    height: 18px;
+  }
+
+  .alert-indicator-card .metric-num {
+    font-size: 24px;
+  }
+
+  .alert-indicator-card .metric-desc {
+    font-size: 10.5px;
+  }
+
+  /* KANBAN SWIPEABLE (SNAP VERTICAL/HORIZONTAL) */
+  .kanban-wrapper {
+    display: flex !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 15px;
+    padding-bottom: 15px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .kanban-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .kanban-column {
+    flex: 0 0 85vw;
+    scroll-snap-align: center;
+    max-height: calc(100dvh - 300px);
+  }
+
+  /* Formulários e Detalhes no Mobile */
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .details-top-info-card {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .note-input-group {
+    flex-direction: column;
     gap: 10px;
   }
 
-  .filter-wrapper {
+  .note-input-group button {
     width: 100%;
   }
 
   .section-actions-row {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 10px;
   }
 
-  .section-actions-row button {
+  .adv-filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .filter-wrapper {
     width: 100%;
   }
 }
