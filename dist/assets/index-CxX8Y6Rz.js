@@ -76,6 +76,11 @@
           <button class="btn-table-action" onclick="abrirModalCadastro('${e.id}')">
             <i data-lucide="edit"></i> Editar
           </button>
+          ${P()?`
+            <button class="btn-table-action btn-delete" onclick="excluirProcessoTabela('${e.id}', '${e.nome_cliente}')">
+              <i data-lucide="trash-2"></i> Excluir
+            </button>
+          `:``}
         </div>
       </td>
     `,t.appendChild(n)}),window.lucide.createIcons()}async function G(){let e=document.getElementById(`table-usuarios-body`);e&&(e.innerHTML=``,(await h()).forEach(t=>{let n=document.createElement(`tr`);n.innerHTML=`
