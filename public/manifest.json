@@ -1,0 +1,18 @@
+{
+  "name": "Ávila & Souza - Central de Prazos",
+  "short_name": "Central Prazos",
+  "description": "Central corporativa para acompanhamento ágil de prazos processuais.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#120305",
+  "theme_color": "#120305",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./app_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

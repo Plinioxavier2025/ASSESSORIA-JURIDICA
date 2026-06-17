@@ -1111,3 +1111,12 @@ async function exibirAvisoPrazosIniciais() {
     welcomeModal.style.display = 'flex';
   }
 }
+
+// Registrar Service Worker para suporte PWA (aplicativo de celular)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('PWA Service Worker registrado com sucesso:', reg.scope))
+      .catch(err => console.error('Erro ao registrar PWA Service Worker:', err));
+  });
+}
