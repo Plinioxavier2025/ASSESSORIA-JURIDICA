@@ -8,7 +8,7 @@
   <!-- Fontes Corporativas (Outfit para títulos e Inter para textos) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Estilos Globais Customizados -->
   <link rel="stylesheet" href="./src/style.css">
@@ -32,30 +32,47 @@
 
   <!-- ================= TELA DE LOGIN ================= -->
   <div id="login-screen" class="login-wrapper">
-    <div class="login-background-overlay"></div>
+    <div class="login-background-overlay">
+      <!-- Monograma overlapping A & S em fonte Cinzel -->
+      <div class="login-monogram-container">
+        <span class="login-monogram-letter letter-a">A</span>
+        <span class="login-monogram-letter letter-s">S</span>
+      </div>
+      <!-- Partículas de luz dourada suspensas no ar -->
+      <div class="login-ambient-particles">
+        <span class="particle"></span>
+        <span class="particle"></span>
+        <span class="particle"></span>
+        <span class="particle"></span>
+        <span class="particle"></span>
+        <span class="particle"></span>
+        <span class="particle"></span>
+        <span class="particle"></span>
+      </div>
+    </div>
     <div class="login-box animate-fade-in">
       <div class="login-logo-container">
         <!-- Logotipo elegante das balanças da justiça em gradiente dourado -->
         <svg class="logo-scale-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <linearGradient id="red-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#ff3333" />
-              <stop offset="50%" stop-color="#e60000" />
-              <stop offset="100%" stop-color="#990000" />
+            <linearGradient id="gold-grad-login" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#aa841c" />
+              <stop offset="50%" stop-color="#d4af37" />
+              <stop offset="100%" stop-color="#ffd700" />
             </linearGradient>
           </defs>
           <!-- Base e mastro -->
-          <path d="M50 82 L50 25 M35 82 L65 82 M42 85 L58 85" stroke="url(#red-grad)" stroke-width="3" stroke-linecap="round" fill="none"/>
-          <circle cx="50" cy="22" r="3.5" fill="url(#red-grad)"/>
+          <path d="M50 82 L50 25 M35 82 L65 82 M42 85 L58 85" stroke="url(#gold-grad-login)" stroke-width="3" stroke-linecap="round" fill="none"/>
+          <circle cx="50" cy="22" r="3.5" fill="url(#gold-grad-login)"/>
           <!-- Trave superior -->
-          <path d="M22 32 L78 32" stroke="url(#red-grad)" stroke-width="3" stroke-linecap="round" fill="none"/>
+          <path d="M22 32 L78 32" stroke="url(#gold-grad-login)" stroke-width="3" stroke-linecap="round" fill="none"/>
           <!-- Pratos da balança -->
           <!-- Esquerdo -->
-          <path d="M22 32 L15 52 L29 52 Z" stroke="url(#red-grad)" stroke-width="1.5" fill="rgba(230,0,0,0.15)"/>
-          <path d="M22 55 L22 32" stroke="url(#red-grad)" stroke-width="1" fill="none"/>
+          <path d="M22 32 L15 52 L29 52 Z" stroke="url(#gold-grad-login)" stroke-width="1.5" fill="rgba(212,175,55,0.15)"/>
+          <path d="M22 55 L22 32" stroke="url(#gold-grad-login)" stroke-width="1" fill="none"/>
           <!-- Direito -->
-          <path d="M78 32 L71 52 L85 52 Z" stroke="url(#red-grad)" stroke-width="1.5" fill="rgba(230,0,0,0.15)"/>
-          <path d="M78 55 L78 32" stroke="url(#red-grad)" stroke-width="1" fill="none"/>
+          <path d="M78 32 L71 52 L85 52 Z" stroke="url(#gold-grad-login)" stroke-width="1.5" fill="rgba(212,175,55,0.15)"/>
+          <path d="M78 55 L78 32" stroke="url(#gold-grad-login)" stroke-width="1" fill="none"/>
         </svg>
       </div>
       <div class="login-heading">
@@ -100,6 +117,13 @@
       <div class="sidebar-brand">
         <div class="brand-logo">
           <svg class="brand-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#aa841c" />
+                <stop offset="50%" stop-color="#d4af37" />
+                <stop offset="100%" stop-color="#ffd700" />
+              </linearGradient>
+            </defs>
             <path d="M50 82 L50 25 M35 82 L65 82 M22 32 L78 32" stroke="url(#gold-grad)" stroke-width="4.5" stroke-linecap="round"/>
             <path d="M22 32 L15 52 L29 52 Z M78 32 L71 52 L85 52 Z" stroke="url(#gold-grad)" stroke-width="2.5" fill="rgba(212,175,55,0.2)"/>
           </svg>

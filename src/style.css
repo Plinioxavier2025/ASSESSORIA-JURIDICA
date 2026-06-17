@@ -139,12 +139,9 @@ h6 {
   left: 0;
   width: 100%;
   height: 100%;
-  background: #080001;
-  background-image:
-    radial-gradient(rgba(255, 0, 0, 0.15) 1px, transparent 0),
-    radial-gradient(rgba(255, 0, 0, 0.1) 2px, transparent 0);
-  background-size: 40px 40px;
-  background-position: 0 0, 20px 20px;
+  background: linear-gradient(135deg, rgba(18, 3, 5, 0.94) 0%, rgba(8, 0, 1, 0.88) 100%), url('./law_office_bg.png');
+  background-size: cover;
+  background-position: center;
   overflow: hidden;
   z-index: -1;
 }
@@ -156,21 +153,22 @@ h6 {
   width: 600px;
   height: 600px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 10, 30, 0.24) 0%, rgba(180, 0, 10, 0.05) 50%, rgba(0, 0, 0, 0) 70%);
-  filter: blur(80px);
-  animation: floatBlur1 25s infinite alternate ease-in-out;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, rgba(180, 0, 10, 0.04) 50%, rgba(0, 0, 0, 0) 70%);
+  filter: blur(90px);
+  animation: floatBlur1 30s infinite alternate ease-in-out;
+  pointer-events: none;
 }
 
 .login-background-overlay::before {
-  top: -15%;
-  left: -15%;
+  top: -10%;
+  left: -10%;
 }
 
 .login-background-overlay::after {
-  bottom: -15%;
-  right: -15%;
-  background: radial-gradient(circle, rgba(180, 0, 10, 0.20) 0%, rgba(255, 50, 50, 0.05) 50%, rgba(0, 0, 0, 0) 70%);
-  animation-delay: -12s;
+  bottom: -10%;
+  right: -10%;
+  background: radial-gradient(circle, rgba(180, 0, 10, 0.12) 0%, rgba(212, 175, 55, 0.03) 50%, rgba(0, 0, 0, 0) 70%);
+  animation-delay: -15s;
   animation-name: floatBlur2;
 }
 
@@ -202,16 +200,129 @@ h6 {
   }
 }
 
+/* MONOGRAMA OVERLAPPING INICIAIS */
+.login-monogram-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+  overflow: hidden;
+}
+
+.login-monogram-letter {
+  font-family: 'Cinzel', serif;
+  font-weight: 800;
+  font-size: 38vw;
+  line-height: 1;
+  position: absolute;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.03) 50%, rgba(255, 255, 255, 0.01) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.12));
+  transition: var(--transition-smooth);
+}
+
+.letter-a {
+  transform: translate(-28%, -18%);
+  animation: floatMonogramA 16s ease-in-out infinite alternate;
+}
+
+.letter-s {
+  transform: translate(18%, 12%);
+  animation: floatMonogramS 16s ease-in-out infinite alternate;
+  animation-delay: -8s;
+  mix-blend-mode: plus-lighter;
+}
+
+@keyframes floatMonogramA {
+  0% {
+    transform: translate(-28%, -18%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-30%, -15%) rotate(-1.5deg);
+  }
+}
+
+@keyframes floatMonogramS {
+  0% {
+    transform: translate(18%, 12%) rotate(0deg);
+  }
+  100% {
+    transform: translate(20%, 14%) rotate(1.5deg);
+  }
+}
+
+/* PARTÍCULAS AMBIENTAIS */
+.login-ambient-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  display: block;
+  width: 4px;
+  height: 4px;
+  background: rgba(212, 175, 55, 0.25);
+  border-radius: 50%;
+  filter: blur(0.5px);
+  bottom: -20px;
+  animation: riseParticle 15s linear infinite;
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+}
+
+.particle:nth-child(1) { left: 10%; width: 2px; height: 2px; animation-duration: 18s; animation-delay: 0s; }
+.particle:nth-child(2) { left: 25%; width: 4px; height: 4px; animation-duration: 22s; animation-delay: 3s; opacity: 0.6; }
+.particle:nth-child(3) { left: 40%; width: 1.5px; height: 1.5px; animation-duration: 14s; animation-delay: 1s; }
+.particle:nth-child(4) { left: 55%; width: 3px; height: 3px; animation-duration: 20s; animation-delay: 5s; }
+.particle:nth-child(5) { left: 70%; width: 2px; height: 2px; animation-duration: 16s; animation-delay: 2s; opacity: 0.5; }
+.particle:nth-child(6) { left: 85%; width: 5px; height: 5px; animation-duration: 25s; animation-delay: 7s; opacity: 0.3; }
+.particle:nth-child(7) { left: 15%; width: 3px; height: 3px; animation-duration: 19s; animation-delay: 4s; }
+.particle:nth-child(8) { left: 90%; width: 2px; height: 2px; animation-duration: 15s; animation-delay: 6s; }
+
+@keyframes riseParticle {
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-110vh) translateX(50px) scale(0.5);
+    opacity: 0;
+  }
+}
+
 .login-box {
-  background: rgba(18, 3, 5, 0.75);
-  border: 1.5px solid rgba(255, 51, 51, 0.35);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(18, 3, 5, 0.62);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-top: 1.5px solid rgba(212, 175, 55, 0.45);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
   width: 420px;
   padding: 40px 30px;
   border-radius: 16px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 35px rgba(255, 51, 51, 0.15);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(212, 175, 55, 0.08);
   text-align: center;
+  transition: var(--transition-smooth);
 }
 
 .login-logo-container {
@@ -223,7 +334,7 @@ h6 {
 .logo-scale-svg {
   width: 75px;
   height: 75px;
-  filter: drop-shadow(0 0 12px rgba(255, 26, 26, 0.6));
+  filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.45));
   transition: var(--transition-smooth);
 }
 
@@ -232,19 +343,20 @@ h6 {
 }
 
 .login-heading h2 {
-  font-size: 26px;
-  font-weight: 800;
+  font-family: 'Cinzel', serif;
+  font-size: 28px;
+  font-weight: 700;
   letter-spacing: 2px;
-  color: #ff1a1a;
-  text-shadow: 0 0 15px rgba(255, 26, 26, 0.8), 0 0 3px rgba(255, 26, 26, 0.5);
+  color: #ff6666;
+  text-shadow: 0 0 20px rgba(255, 102, 102, 0.35), 0 0 3px rgba(255, 102, 102, 0.2);
   margin-bottom: 2px;
 }
 
 .login-heading p {
   font-family: var(--font-title);
   font-size: 11px;
-  letter-spacing: 4px;
-  color: #ff6666;
+  letter-spacing: 5px;
+  color: var(--text-muted);
   text-transform: uppercase;
   margin-bottom: 30px;
   font-weight: 700;
@@ -393,8 +505,8 @@ h6 {
 }
 
 .login-box .form-control-group input:focus {
-  border-color: #ff3333;
-  box-shadow: 0 0 0 3px rgba(255, 51, 51, 0.25);
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
 }
 
 .btn-login {
