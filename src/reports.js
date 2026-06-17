@@ -237,5 +237,13 @@ export async function exportarPDFRelatorio(filtros) {
   });
 
   const filename = `relatorio_prazos_${new Date().toISOString().slice(0, 10)}.pdf`;
-  doc.save(filename);
+  
+  // Usar Data URI em vez de Blob URL para evitar o bug de download com nome UUID em PWAs/Chrome
+  const dataUri = doc.output('datauristring');
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.href = dataUri;
+  downloadAnchor.download = filename;
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  document.body.removeChild(downloadAnchor);
 }
