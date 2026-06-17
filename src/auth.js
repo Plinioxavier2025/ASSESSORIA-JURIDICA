@@ -1,4 +1,4 @@
-import { getUsuarios, registrarAuditoria } from './db.js';
+import { getUsuarios, registrarAuditoria, isSupabaseConnected, secureLogin } from './db.js';
 
 let currentUser = null;
 
@@ -38,11 +38,18 @@ export function getCurrentUser() {
 }
 
 export async function login(username, password) {
-  const users = await getUsuarios();
   const hashedInput = await hashSenha(password.trim());
+  let user = null;
   
-  // Procura usuário correspondente
-  const user = users.find(u => u.login.trim().toLowerCase() === username.trim().toLowerCase() && u.senha === hashedInput);
+  if (isSupabaseConnected()) {
+    user = await secureLogin(username, hashedInput);
+  }
+  
+  if (!user) {
+    // Fallback local
+    const users = await getUsuarios();
+    user = users.find(u => u.login.trim().toLowerCase() === username.trim().toLowerCase() && u.senha === hashedInput);
+  }
   
   if (user) {
     currentUser = {
@@ -50,7 +57,8 @@ export async function login(username, password) {
       nome: user.nome,
       email: user.email,
       login: user.login,
-      cargo: user.cargo
+      cargo: user.cargo,
+      password_hash: hashedInput // Salva o hash da senha na sessão para autenticação no banco
     };
     sessionStorage.setItem('as_session', JSON.stringify(currentUser));
     

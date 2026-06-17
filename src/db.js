@@ -1,4 +1,6 @@
 // ----------------- ABSTRAÇÃO DE DADOS (SUPABASE / LOCAL FALLBACK) -----------------
+import { getCurrentUser } from './auth.js';
+
 let supabase = null;
 
 // Tenta carregar do import.meta.env (Vite env vars) ou usa os padrões do projeto
@@ -31,6 +33,25 @@ export function initSupabase(url, key) {
     }
   }
   return false;
+}
+
+export async function secureLogin(username, passwordHash) {
+  if (isSupabaseConnected()) {
+    try {
+      const { data, error } = await supabase.rpc('secure_login', {
+        p_login: username,
+        p_password_hash: passwordHash
+      });
+      if (!error && data && data.length > 0) {
+        return data[0];
+      } else if (error) {
+        console.error("Erro no Supabase secureLogin:", error.message);
+      }
+    } catch (e) {
+      console.error("Erro no Supabase secureLogin:", e);
+    }
+  }
+  return null;
 }
 
 // Inicialização automática com dados salvos ou de ambiente
@@ -292,17 +313,20 @@ initLocalData();
 export async function registrarAuditoria(tipo_acao, detalhes, usuario) {
   const nomeUser = usuario ? usuario.nome : "Sistema";
   const cargoUser = usuario ? usuario.cargo : "Administrador";
+  const currentUser = getCurrentUser();
+  const loginName = currentUser ? currentUser.login : "Sistema";
+  const passwordHash = currentUser ? currentUser.password_hash : "";
 
   if (isSupabaseConnected()) {
     try {
-      const { error } = await supabase
-        .from('auditoria')
-        .insert([{
-          usuario_nome: nomeUser,
-          usuario_cargo: cargoUser,
-          tipo_acao,
-          detalhes
-        }]);
+      const { error } = await supabase.rpc('secure_registrar_auditoria', {
+        p_login: loginName,
+        p_password_hash: passwordHash,
+        p_tipo_acao: tipo_acao,
+        p_detalhes: detalhes,
+        p_usuario_nome: nomeUser,
+        p_usuario_cargo: cargoUser
+      });
       if (!error) return;
     } catch (e) {
       console.error("Erro no Supabase auditoria, usando fallback local", e);
@@ -325,11 +349,14 @@ export async function registrarAuditoria(tipo_acao, detalhes, usuario) {
 // ----------------- IMPLEMENTAÇÃO DA API DE USUÁRIOS -----------------
 export async function getUsuarios() {
   if (isSupabaseConnected()) {
+    const currentUser = getCurrentUser();
+    const loginName = currentUser ? currentUser.login : "";
+    const passwordHash = currentUser ? currentUser.password_hash : "";
     try {
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('*')
-        .order('nome', { ascending: true });
+      const { data, error } = await supabase.rpc('secure_get_usuarios', {
+        p_login: loginName,
+        p_password_hash: passwordHash
+      });
       if (!error) return data;
     } catch (e) {
       console.error("Erro no Supabase getUsuarios, usando local", e);
@@ -340,15 +367,23 @@ export async function getUsuarios() {
 
 export async function addUsuario(usuarioData, currentUser) {
   let novoUsuario = null;
+  const adminUser = getCurrentUser();
+  const loginName = adminUser ? adminUser.login : "";
+  const passwordHash = adminUser ? adminUser.password_hash : "";
 
   if (isSupabaseConnected()) {
     try {
-      const { data, error } = await supabase
-        .from('usuarios')
-        .insert([usuarioData])
-        .select();
+      const { data, error } = await supabase.rpc('secure_add_usuario', {
+        p_login: loginName,
+        p_password_hash: passwordHash,
+        p_novo_nome: usuarioData.nome,
+        p_novo_email: usuarioData.email,
+        p_novo_login: usuarioData.login,
+        p_nova_senha: usuarioData.senha,
+        p_novo_cargo: usuarioData.cargo
+      });
       if (!error && data) {
-        novoUsuario = data[0];
+        novoUsuario = data;
       } else if (error) {
         throw new Error(error.message);
       }
@@ -378,16 +413,24 @@ export async function addUsuario(usuarioData, currentUser) {
 
 export async function editUsuario(id, usuarioData, currentUser) {
   let usuarioEditado = null;
+  const adminUser = getCurrentUser();
+  const loginName = adminUser ? adminUser.login : "";
+  const passwordHash = adminUser ? adminUser.password_hash : "";
 
   if (isSupabaseConnected()) {
     try {
-      const { data, error } = await supabase
-        .from('usuarios')
-        .update(usuarioData)
-        .eq('id', id)
-        .select();
+      const { data, error } = await supabase.rpc('secure_edit_usuario', {
+        p_login: loginName,
+        p_password_hash: passwordHash,
+        p_usuario_id: id,
+        p_edit_nome: usuarioData.nome,
+        p_edit_email: usuarioData.email,
+        p_edit_login: usuarioData.login,
+        p_edit_senha: usuarioData.senha || null,
+        p_edit_cargo: usuarioData.cargo
+      });
       if (!error && data) {
-        usuarioEditado = data[0];
+        usuarioEditado = data;
       } else if (error) {
         throw new Error(error.message);
       }
@@ -415,15 +458,18 @@ export async function editUsuario(id, usuarioData, currentUser) {
 
 export async function deleteUsuario(id, currentUser) {
   let excluido = false;
+  const adminUser = getCurrentUser();
+  const loginName = adminUser ? adminUser.login : "";
+  const passwordHash = adminUser ? adminUser.password_hash : "";
 
   if (isSupabaseConnected()) {
     try {
-      const { data, error } = await supabase
-        .from('usuarios')
-        .delete()
-        .eq('id', id)
-        .select();
-      if (!error && data && data.length > 0) {
+      const { data, error } = await supabase.rpc('secure_delete_usuario', {
+        p_login: loginName,
+        p_password_hash: passwordHash,
+        p_usuario_id: id
+      });
+      if (!error && data) {
         excluido = true;
       } else if (error) {
         throw new Error(error.message);
@@ -453,11 +499,14 @@ export async function deleteUsuario(id, currentUser) {
 // ----------------- IMPLEMENTAÇÃO DA API DE PROCESSOS -----------------
 export async function getProcessos() {
   if (isSupabaseConnected()) {
+    const currentUser = getCurrentUser();
+    const loginName = currentUser ? currentUser.login : "";
+    const passwordHash = currentUser ? currentUser.password_hash : "";
     try {
-      const { data, error } = await supabase
-        .from('processos')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.rpc('secure_get_processos', {
+        p_login: loginName,
+        p_password_hash: passwordHash
+      });
       if (!error) return data;
     } catch (e) {
       console.error("Erro no Supabase getProcessos, usando local fallback", e);
@@ -469,6 +518,8 @@ export async function getProcessos() {
 export async function addProcesso(processoData, currentUser) {
   let novoProcesso = null;
   const criadoPorNome = currentUser ? currentUser.nome : "Sistema";
+  const loginName = currentUser ? currentUser.login : "";
+  const passwordHash = currentUser ? currentUser.password_hash : "";
 
   const payload = {
     ...processoData,
@@ -478,18 +529,28 @@ export async function addProcesso(processoData, currentUser) {
 
   if (isSupabaseConnected()) {
     try {
-      const { data, error } = await supabase
-        .from('processos')
-        .insert([payload])
-        .select();
+      const { data, error } = await supabase.rpc('secure_add_processo', {
+        p_login: loginName,
+        p_password_hash: passwordHash,
+        p_nome_cliente: processoData.nome_cliente,
+        p_numero_processo: processoData.numero_processo,
+        p_telefone: processoData.telefone,
+        p_observacoes: processoData.observacoes,
+        p_advogado_responsavel: processoData.advogado_responsavel,
+        p_data_limite: processoData.data_limite,
+        p_status_processo: processoData.status_processo,
+        p_criado_por: criadoPorNome
+      });
       if (!error && data) {
-        novoProcesso = data[0];
-        await supabase.from('historico_movimentacoes').insert([{
-          processo_id: novoProcesso.id,
-          usuario_nome: criadoPorNome,
-          acao: "Abertura de Processo",
-          detalhes: `Processo cadastrado inicialmente para o advogado ${processoData.advogado_responsavel} com status ${processoData.status_processo}.` + (processoData.observacoes ? ` Observações: ${processoData.observacoes}` : '')
-        }]);
+        novoProcesso = data;
+        await supabase.rpc('secure_add_historico', {
+          p_login: loginName,
+          p_password_hash: passwordHash,
+          p_processo_id: novoProcesso.id,
+          p_usuario_nome: criadoPorNome,
+          p_acao: "Abertura de Processo",
+          p_detalhes: `Processo cadastrado inicialmente para o advogado ${processoData.advogado_responsavel} com status ${processoData.status_processo}.` + (processoData.observacoes ? ` Observações: ${processoData.observacoes}` : '')
+        });
       } else if (error) {
         throw new Error(error.message);
       }
@@ -528,25 +589,34 @@ export async function addProcesso(processoData, currentUser) {
 export async function editProcesso(id, processoData, currentUser) {
   let processoEditado = null;
   const alteradoPorNome = currentUser ? currentUser.nome : "Sistema";
-
-  const payload = {
-    ...processoData,
-    alterado_por: alteradoPorNome,
-    alterado_em: new Date().toISOString()
-  };
+  const loginName = currentUser ? currentUser.login : "";
+  const passwordHash = currentUser ? currentUser.password_hash : "";
 
   if (isSupabaseConnected()) {
     try {
       // Obter processo antigo para auditar mudanças de status
-      const { data: oldProc } = await supabase.from('processos').select('*').eq('id', id).maybeSingle();
+      const { data: oldProcList } = await supabase.rpc('secure_get_processos', {
+        p_login: loginName,
+        p_password_hash: passwordHash
+      });
+      const oldProc = oldProcList ? oldProcList.find(p => p.id === id) : null;
       
-      const { data, error } = await supabase
-        .from('processos')
-        .update(payload)
-        .eq('id', id)
-        .select();
+      const { data, error } = await supabase.rpc('secure_edit_processo', {
+        p_login: loginName,
+        p_password_hash: passwordHash,
+        p_processo_id: id,
+        p_nome_cliente: processoData.nome_cliente,
+        p_numero_processo: processoData.numero_processo,
+        p_telefone: processoData.telefone,
+        p_observacoes: processoData.observacoes,
+        p_advogado_responsavel: processoData.advogado_responsavel,
+        p_data_limite: processoData.data_limite,
+        p_status_processo: processoData.status_processo,
+        p_alterado_por: alteradoPorNome
+      });
+      
       if (!error && data) {
-        processoEditado = data[0];
+        processoEditado = data;
 
         // Verificar se mudou status, advogado ou observações para registrar histórico
         let mudancas = [];
@@ -569,12 +639,14 @@ export async function editProcesso(id, processoData, currentUser) {
           mudancas.push("Dados cadastrais do processo alterados.");
         }
 
-        await supabase.from('historico_movimentacoes').insert([{
-          processo_id: id,
-          usuario_nome: alteradoPorNome,
-          acao: "Alteração de Cadastro",
-          detalhes: mudancas.join(" | ")
-        }]);
+        await supabase.rpc('secure_add_historico', {
+          p_login: loginName,
+          p_password_hash: passwordHash,
+          p_processo_id: id,
+          p_usuario_nome: alteradoPorNome,
+          p_acao: "Alteração de Cadastro",
+          p_detalhes: mudancas.join(" | ")
+        });
       } else if (error) {
         throw new Error(error.message);
       }
@@ -633,13 +705,17 @@ export async function editProcesso(id, processoData, currentUser) {
 
 export async function deleteProcesso(id, currentUser) {
   let excluido = false;
+  const loginName = currentUser ? currentUser.login : "";
+  const passwordHash = currentUser ? currentUser.password_hash : "";
 
   if (isSupabaseConnected()) {
     try {
-      // Limpa os históricos primeiro (se não estiver cascade no banco real)
-      await supabase.from('historico_movimentacoes').delete().eq('processo_id', id);
-      const { data, error } = await supabase.from('processos').delete().eq('id', id).select();
-      if (!error && data && data.length > 0) {
+      const { data, error } = await supabase.rpc('secure_delete_processo', {
+        p_login: loginName,
+        p_password_hash: passwordHash,
+        p_processo_id: id
+      });
+      if (!error && data) {
         excluido = true;
       }
     } catch (e) {
@@ -675,12 +751,15 @@ export async function deleteProcesso(id, currentUser) {
 // ----------------- HISTÓRICO DE MOVIMENTAÇÕES -----------------
 export async function getHistoricoPorProcesso(processoId) {
   if (isSupabaseConnected()) {
+    const currentUser = getCurrentUser();
+    const loginName = currentUser ? currentUser.login : "";
+    const passwordHash = currentUser ? currentUser.password_hash : "";
     try {
-      const { data, error } = await supabase
-        .from('historico_movimentacoes')
-        .select('*')
-        .eq('processo_id', processoId)
-        .order('data_hora', { ascending: true }); // Linha do tempo: do mais antigo ao mais novo
+      const { data, error } = await supabase.rpc('secure_get_historico', {
+        p_login: loginName,
+        p_password_hash: passwordHash,
+        p_processo_id: processoId
+      });
       if (!error) return data;
     } catch (e) {
       console.error("Erro no Supabase getHistoricoPorProcesso", e);
@@ -695,22 +774,21 @@ export async function getHistoricoPorProcesso(processoId) {
 export async function addHistorico(processoId, acao, detalhes, currentUser) {
   let novoHistorico = null;
   const usuarioNome = currentUser ? currentUser.nome : "Sistema";
-
-  const payload = {
-    processo_id: processoId,
-    usuario_nome: usuarioNome,
-    acao,
-    detalhes
-  };
+  const loginName = currentUser ? currentUser.login : "";
+  const passwordHash = currentUser ? currentUser.password_hash : "";
 
   if (isSupabaseConnected()) {
     try {
-      const { data, error } = await supabase
-        .from('historico_movimentacoes')
-        .insert([payload])
-        .select();
+      const { data, error } = await supabase.rpc('secure_add_historico', {
+        p_login: loginName,
+        p_password_hash: passwordHash,
+        p_processo_id: processoId,
+        p_usuario_nome: usuarioNome,
+        p_acao: acao,
+        p_detalhes: detalhes
+      });
       if (!error && data) {
-        novoHistorico = data[0];
+        novoHistorico = data;
       }
     } catch (e) {
       console.error("Erro no Supabase addHistorico", e);
@@ -735,39 +813,31 @@ export async function addHistorico(processoId, acao, detalhes, currentUser) {
 export async function concluirPrazo(processoId, currentUser) {
   let processoEditado = null;
   const concluidoPorNome = currentUser ? currentUser.nome : "Sistema";
-  const dataHoraConclusao = new Date().toISOString();
-
-  // De acordo com os requisitos:
-  // - Retirar o prazo da lista de alertas (prazo_concluido = true)
-  // - Mover o processo para status "Em Andamento"
-  // - Registrar automaticamente quem concluiu, data e hora da conclusão
-  const payload = {
-    status_processo: 'Em Andamento',
-    prazo_concluido: true,
-    concluido_por: concluidoPorNome,
-    concluido_em: dataHoraConclusao,
-    alterado_por: concluidoPorNome,
-    alterado_em: dataHoraConclusao
-  };
+  const loginName = currentUser ? currentUser.login : "";
+  const passwordHash = currentUser ? currentUser.password_hash : "";
 
   if (isSupabaseConnected()) {
     try {
-      const { data, error } = await supabase
-        .from('processos')
-        .update(payload)
-        .eq('id', processoId)
-        .select();
+      const { data, error } = await supabase.rpc('secure_concluir_prazo', {
+        p_login: loginName,
+        p_password_hash: passwordHash,
+        p_processo_id: processoId,
+        p_concluido_por: concluidoPorNome
+      });
       
       if (!error && data) {
-        processoEditado = data[0];
+        processoEditado = data;
+        const dataHoraConclusao = processoEditado.concluido_em;
         
         // Registrar histórico permanente da conclusão no Supabase
-        await supabase.from('historico_movimentacoes').insert([{
-          processo_id: processoId,
-          usuario_nome: concluidoPorNome,
-          acao: "Conclusão de Prazo",
-          detalhes: `Prazo concluído por ${concluidoPorNome} em ${new Date(dataHoraConclusao).toLocaleDateString('pt-BR')} às ${new Date(dataHoraConclusao).toLocaleTimeString('pt-BR')}. Processo movido para a seção "Em Andamento".`
-        }]);
+        await supabase.rpc('secure_add_historico', {
+          p_login: loginName,
+          p_password_hash: passwordHash,
+          p_processo_id: processoId,
+          p_usuario_nome: concluidoPorNome,
+          p_acao: "Conclusão de Prazo",
+          p_detalhes: `Prazo concluído por ${concluidoPorNome} em ${new Date(dataHoraConclusao).toLocaleDateString('pt-BR')} às ${new Date(dataHoraConclusao).toLocaleTimeString('pt-BR')}. Processo movido para a seção "Em Andamento".`
+        });
       } else if (error) {
         throw new Error(error.message);
       }
