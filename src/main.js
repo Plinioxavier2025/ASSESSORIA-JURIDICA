@@ -357,11 +357,9 @@ function renderizarTabelaProcessos(processos) {
               <i data-lucide="check"></i> Concluir
             </button>
           ` : ''}
-          ${isAdmin() ? `
-            <button class="btn-table-action btn-delete" onclick="excluirProcessoTabela('${p.id}', '${p.nome_cliente}')">
-              <i data-lucide="trash-2"></i> Excluir
-            </button>
-          ` : ''}
+          <button class="btn-table-action btn-delete" onclick="excluirProcessoTabela('${p.id}', '${p.nome_cliente}')">
+            <i data-lucide="trash-2"></i> Excluir
+          </button>
         </div>
       </td>
     `;
@@ -447,11 +445,9 @@ function renderizarTabelaPrazosCumpridos(processos) {
           <button class="btn-table-action" onclick="abrirModalCadastro('${p.id}')">
             <i data-lucide="edit"></i> Editar
           </button>
-          ${isAdmin() ? `
-            <button class="btn-table-action btn-delete" onclick="excluirProcessoTabela('${p.id}', '${p.nome_cliente}')">
-              <i data-lucide="trash-2"></i> Excluir
-            </button>
-          ` : ''}
+          <button class="btn-table-action btn-delete" onclick="excluirProcessoTabela('${p.id}', '${p.nome_cliente}')">
+            <i data-lucide="trash-2"></i> Excluir
+          </button>
         </div>
       </td>
     `;
