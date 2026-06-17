@@ -28,6 +28,8 @@ import {
   hashSenha
 } from './auth.js';
 
+import { exportarPDFRelatorio } from './reports.js';
+
 
 // DATA ATUAL FIXA DO SISTEMA
 const DATA_HOJE_SISTEMA = new Date('2026-06-15T00:00:00');
@@ -1023,7 +1025,31 @@ const inicializarApp = async () => {
     }
   });
 
+  // Exportar Relatório PDF com os filtros da tela
+  document.getElementById('btn-export-pdf').addEventListener('click', async () => {
+    const filtros = {
+      advogado: document.getElementById('filter-lawyer').value,
+      status: document.getElementById('filter-status').value,
+      tipoRelatorio: 'Todos'
+    };
 
+    const urgFiltro = document.getElementById('filter-urgency').value;
+    if (urgFiltro === 'Vencido') {
+      filtros.tipoRelatorio = 'vencidos';
+    } else if (urgFiltro !== 'Todos') {
+      filtros.tipoRelatorio = 'proximos';
+    } else if (filtros.status === 'Concluído' || filtros.status === 'Prazo Cumprido') {
+      filtros.tipoRelatorio = 'concluidos';
+    }
+
+    showToast("Gerando relatório PDF...", "info");
+    try {
+      await exportarPDFRelatorio(filtros);
+      showToast("Relatório PDF baixado com sucesso!", "success");
+    } catch (err) {
+      showToast("Erro ao exportar PDF: " + err.message, "error");
+    }
+  });
 
   // 15. Configurações - Backup Download e Recuperação
   document.getElementById('btn-download-backup').addEventListener('click', () => {
