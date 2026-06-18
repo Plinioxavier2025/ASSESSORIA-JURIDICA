@@ -31,6 +31,29 @@ import {
 import { exportarPDFRelatorio } from './reports.js';
 
 
+// Limpeza automática de Service Workers e Caches antigos em ambiente de desenvolvimento local (localhost)
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        registration.unregister().then((unregistered) => {
+          if (unregistered) {
+            console.log('Service Worker de desenvolvimento desregistrado automaticamente.');
+            window.location.reload(); // Recarrega uma vez para garantir que as requisições não sejam mais interceptadas
+          }
+        });
+      }
+    });
+  }
+  if ('caches' in window) {
+    caches.keys().then((names) => {
+      for (const name of names) {
+        caches.delete(name);
+      }
+    });
+  }
+}
+
 // DATA ATUAL FIXA DO SISTEMA
 const DATA_HOJE_SISTEMA = new Date('2026-06-15T00:00:00');
 
@@ -1138,8 +1161,8 @@ async function exibirAvisoPrazosIniciais() {
   }
 }
 
-// Registrar Service Worker para suporte PWA (aplicativo de celular)
-if ('serviceWorker' in navigator) {
+// Registrar Service Worker para suporte PWA (aplicativo de celular) apenas em produção (evita cache em desenvolvimento)
+if ('serviceWorker' in navigator && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
       .then(reg => console.log('PWA Service Worker registrado com sucesso:', reg.scope))
