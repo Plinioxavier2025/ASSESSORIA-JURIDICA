@@ -1,12 +1,8 @@
 const CACHE_NAME = 'as-prazos-cache-v1';
 const ASSETS_TO_CACHE = [
+  './',
   './index.html',
-  './src/style.css',
-  './src/main.js',
-  './src/db.js',
-  './src/auth.js',
-  './src/reports.js',
-  './src/law_office_bg.png',
+  './manifest.json',
   './app_icon.png'
 ];
 
@@ -35,6 +31,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+  const isSameOrigin = url.origin === self.location.origin;
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -47,7 +48,25 @@ self.addEventListener('fetch', (event) => {
         
         return cachedResponse;
       }
-      return fetch(event.request);
+
+      // Se não estiver no cache, faz fetch da rede e adiciona ao cache se for local
+      return fetch(event.request).then((networkResponse) => {
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+          return networkResponse;
+        }
+
+        // Cache apenas assets estáticos da mesma origem
+        if (isSameOrigin) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+
+        return networkResponse;
+      }).catch(() => {
+        // Falha silenciosa se offline
+      });
     })
   );
 });

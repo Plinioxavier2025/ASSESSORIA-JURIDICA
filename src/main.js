@@ -25,7 +25,8 @@ import {
   getCurrentUser,
   isAdmin,
   checkPermission,
-  hashSenha
+  hashSenha,
+  restaurarSessaoSupabase
 } from './auth.js';
 
 import { exportarPDFRelatorio } from './reports.js';
@@ -59,7 +60,38 @@ const DATA_HOJE_SISTEMA = new Date('2026-06-15T00:00:00');
 
 // ----------------- AUXILIARES E UTILITÁRIOS -----------------
 
-// Cria popups de notificação (toasts) no canto da tela
+// Escapar caracteres especiais contra XSS
+export function escapeHTML(str) {
+  if (typeof str !== 'string') return str || '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Controlar estado de carregamento de botões (evitar clique duplo)
+export function setButtonLoading(button, isLoading, loadingText = "Processando...") {
+  if (!button) return;
+  if (isLoading) {
+    button.disabled = true;
+    button.dataset.originalHtml = button.innerHTML;
+    button.innerHTML = `
+      <span class="spinner-loading"></span>
+      <span>${escapeHTML(loadingText)}</span>
+    `;
+    button.classList.add('btn-loading');
+  } else {
+    button.disabled = false;
+    if (button.dataset.originalHtml) {
+      button.innerHTML = button.dataset.originalHtml;
+    }
+    button.classList.remove('btn-loading');
+  }
+}
+
+// Cria popups de notificação (toasts) no canto da tela de forma segura
 export function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   if (!container) return;
@@ -74,8 +106,9 @@ export function showToast(message, type = 'info') {
 
   toast.innerHTML = `
     <i data-lucide="${iconName}"></i>
-    <span>${message}</span>
+    <span class="toast-text"></span>
   `;
+  toast.querySelector('.toast-text').textContent = message;
 
   container.appendChild(toast);
   window.lucide.createIcons();
@@ -138,6 +171,17 @@ export async function atualizarTelas() {
   const currentUser = getCurrentUser();
   if (!currentUser) return;
 
+  // Redireciona usuários sem permissão se estiverem em uma aba restrita
+  const activeTabEl = document.querySelector('.nav-item.active');
+  const activeTab = activeTabEl ? activeTabEl.getAttribute('data-target') : 'dashboard';
+  if (!checkPermission(`ver_${activeTab}`) && activeTab !== 'dashboard' && activeTab !== 'prazoscumpridos') {
+    const dashboardTab = document.querySelector('.nav-item[data-target="dashboard"]');
+    if (dashboardTab) {
+      dashboardTab.click();
+    }
+    return;
+  }
+
 
 
   // 1. Obter Processos
@@ -193,21 +237,21 @@ export async function atualizarTelas() {
 
     // Conteúdo do Card
     card.innerHTML = `
-      <div class="card-client-name" title="${p.nome_cliente}">${p.nome_cliente}</div>
-      <div class="card-process-num" title="${p.numero_processo}">${p.numero_processo}</div>
+      <div class="card-client-name" title="${escapeHTML(p.nome_cliente)}">${escapeHTML(p.nome_cliente)}</div>
+      <div class="card-process-num" title="${escapeHTML(p.numero_processo)}">${escapeHTML(p.numero_processo)}</div>
       <div class="card-deadline-tag">
         <i data-lucide="clock"></i>
-        <span>${obterTextoPrazo(dias, concluido)} (${formatarDataBR(p.data_limite)})</span>
+        <span>${escapeHTML(obterTextoPrazo(dias, concluido))} (${escapeHTML(formatarDataBR(p.data_limite))})</span>
       </div>
       <div class="card-bottom-actions">
-        <span class="status-badge badge-${p.status_processo.toLowerCase().replace(' ', '-')}">${p.status_processo}</span>
+        <span class="status-badge badge-${escapeHTML(p.status_processo.toLowerCase().replace(' ', '-'))}">${escapeHTML(p.status_processo)}</span>
         <div class="card-quick-buttons">
           ${!concluido ? `
-            <button class="btn-quick-action action-conclude" title="Concluir Prazo" data-id="${p.id}">
+            <button class="btn-quick-action action-conclude" title="Concluir Prazo" data-id="${escapeHTML(p.id)}">
               <i data-lucide="check-circle2"></i>
             </button>
           ` : ''}
-          <button class="btn-quick-action action-edit" title="Editar Processo" data-id="${p.id}">
+          <button class="btn-quick-action action-edit" title="Editar Processo" data-id="${escapeHTML(p.id)}">
             <i data-lucide="edit-3"></i>
           </button>
         </div>
@@ -247,9 +291,9 @@ export async function atualizarTelas() {
     // Injeta na coluna correspondente
     if (p.advogado_responsavel === 'Dra. Regina') { colRegina.appendChild(card); countReginaLawyer++; }
     else if (p.advogado_responsavel === 'Dr. Eloi') { colEloi.appendChild(card); countEloiLawyer++; }
-    else if (p.advogado_responsavel === 'Walisson') { colWalisson.appendChild(card); countWalissonLawyer++; }
-    else if (p.advogado_responsavel === 'Andreia') { colAndreia.appendChild(card); countAndreiaLawyer++; }
-    else if (p.advogado_responsavel === 'Iza') { colIza.appendChild(card); countIzaLawyer++; }
+    else if (p.advogado_responsavel === 'Dr. Walisson') { colWalisson.appendChild(card); countWalissonLawyer++; }
+    else if (p.advogado_responsavel === 'Dra. Andreia') { colAndreia.appendChild(card); countAndreiaLawyer++; }
+    else if (p.advogado_responsavel === 'Dra. Iza') { colIza.appendChild(card); countIzaLawyer++; }
   });
 
   // Exibir placeholder se coluna estiver vazia
@@ -284,7 +328,6 @@ export async function atualizarTelas() {
   window.lucide.createIcons();
 
   // 2. Preencher tabelas gerais de outras abas se ativas
-  const activeTab = document.querySelector('.nav-item.active').getAttribute('data-target');
   if (activeTab === 'processos') {
     renderizarTabelaProcessos(processos);
   } else if (activeTab === 'prazoscumpridos') {
@@ -358,31 +401,31 @@ function renderizarTabelaProcessos(processos) {
     tr.innerHTML = `
       <td>
         <div class="table-client-info">
-          <strong>${p.nome_cliente}</strong>
-          <span style="font-size: 11px; color: var(--text-muted);">Cadastrado por ${p.criado_por}</span>
+          <strong>${escapeHTML(p.nome_cliente)}</strong>
+          <span style="font-size: 11px; color: var(--text-muted);">Cadastrado por ${escapeHTML(p.criado_por)}</span>
         </div>
       </td>
-      <td>${p.numero_processo}</td>
-      <td>${p.telefone || '-'}</td>
-      <td>${p.advogado_responsavel}</td>
-      <td>${formatarDataBR(p.data_cadastro)}</td>
-      <td>${formatarDataBR(p.data_limite)}</td>
-      <td style="font-weight: 600;">${obterTextoPrazo(dias, concluido)}</td>
-      <td><span class="status-badge badge-${p.status_processo.toLowerCase().replace(' ', '-')}">${p.status_processo}</span></td>
+      <td>${escapeHTML(p.numero_processo)}</td>
+      <td>${escapeHTML(p.telefone || '-')}</td>
+      <td>${escapeHTML(p.advogado_responsavel)}</td>
+      <td>${escapeHTML(formatarDataBR(p.data_cadastro))}</td>
+      <td>${escapeHTML(formatarDataBR(p.data_limite))}</td>
+      <td style="font-weight: 600;">${escapeHTML(obterTextoPrazo(dias, concluido))}</td>
+      <td><span class="status-badge badge-${escapeHTML(p.status_processo.toLowerCase().replace(' ', '-'))}">${escapeHTML(p.status_processo)}</span></td>
       <td>
         <div class="td-actions">
-          <button class="btn-table-action" onclick="abrirModalDetalhes('${p.id}')">
+          <button class="btn-table-action" onclick="abrirModalDetalhes('${escapeHTML(p.id)}')">
             <i data-lucide="folder-open"></i> Pasta Digital
           </button>
-          <button class="btn-table-action" onclick="abrirModalCadastro('${p.id}')">
+          <button class="btn-table-action" onclick="abrirModalCadastro('${escapeHTML(p.id)}')">
             <i data-lucide="edit"></i> Editar
           </button>
           ${!concluido ? `
-            <button class="btn-table-action btn-conclude" onclick="cumprirPrazoTabela('${p.id}', '${p.nome_cliente}')">
+            <button class="btn-table-action btn-conclude" onclick="cumprirPrazoTabela('${escapeHTML(p.id)}', '${escapeHTML(p.nome_cliente)}')">
               <i data-lucide="check"></i> Concluir
             </button>
           ` : ''}
-          <button class="btn-table-action btn-delete" onclick="excluirProcessoTabela('${p.id}', '${p.nome_cliente}')">
+          <button class="btn-table-action btn-delete" onclick="excluirProcessoTabela('${escapeHTML(p.id)}', '${escapeHTML(p.nome_cliente)}')">
             <i data-lucide="trash-2"></i> Excluir
           </button>
         </div>
@@ -452,25 +495,25 @@ function renderizarTabelaPrazosCumpridos(processos) {
     tr.innerHTML = `
       <td>
         <div class="table-client-info">
-          <strong>${p.nome_cliente}</strong>
-          <span style="font-size: 11px; color: var(--text-muted);">Telefone: ${p.telefone || '-'}</span>
+          <strong>${escapeHTML(p.nome_cliente)}</strong>
+          <span style="font-size: 11px; color: var(--text-muted);">Telefone: ${escapeHTML(p.telefone || '-')}</span>
         </div>
       </td>
-      <td>${p.numero_processo}</td>
-      <td>${p.advogado_responsavel}</td>
-      <td>${formatarDataBR(p.data_cadastro)}</td>
-      <td>${formatarDataBR(p.data_limite)}</td>
-      <td>${p.concluido_em ? new Date(p.concluido_em).toLocaleString('pt-BR') : '-'}</td>
-      <td><strong>${p.concluido_por || '-'}</strong></td>
+      <td>${escapeHTML(p.numero_processo)}</td>
+      <td>${escapeHTML(p.advogado_responsavel)}</td>
+      <td>${escapeHTML(formatarDataBR(p.data_cadastro))}</td>
+      <td>${escapeHTML(formatarDataBR(p.data_limite))}</td>
+      <td>${escapeHTML(p.concluido_em ? new Date(p.concluido_em).toLocaleString('pt-BR') : '-')}</td>
+      <td><strong>${escapeHTML(p.concluido_por || '-')}</strong></td>
       <td>
         <div class="td-actions">
-          <button class="btn-table-action" onclick="abrirModalDetalhes('${p.id}')">
+          <button class="btn-table-action" onclick="abrirModalDetalhes('${escapeHTML(p.id)}')">
             <i data-lucide="folder-open"></i> Pasta Digital
           </button>
-          <button class="btn-table-action" onclick="abrirModalCadastro('${p.id}')">
+          <button class="btn-table-action" onclick="abrirModalCadastro('${escapeHTML(p.id)}')">
             <i data-lucide="edit"></i> Editar
           </button>
-          <button class="btn-table-action btn-delete" onclick="excluirProcessoTabela('${p.id}', '${p.nome_cliente}')">
+          <button class="btn-table-action btn-delete" onclick="excluirProcessoTabela('${escapeHTML(p.id)}', '${escapeHTML(p.nome_cliente)}')">
             <i data-lucide="trash-2"></i> Excluir
           </button>
         </div>
@@ -492,22 +535,22 @@ async function renderizarTabelaUsuarios() {
   usuarios.forEach(u => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong>${u.nome}</strong></td>
-      <td>${u.email}</td>
-      <td><code>${u.login}</code></td>
+      <td><strong>${escapeHTML(u.nome)}</strong></td>
+      <td>${escapeHTML(u.email)}</td>
+      <td><code>${escapeHTML(u.login)}</code></td>
       <td>
-        <span class="status-badge ${u.cargo === 'Administrador' ? 'badge-protocolado' : 'badge-andamento'}">
-          ${u.cargo}
+        <span class="status-badge ${escapeHTML(u.cargo === 'Administrador' ? 'badge-protocolado' : 'badge-andamento')}">
+          ${escapeHTML(u.cargo)}
         </span>
       </td>
-      <td>${formatarDataBR(u.created_at.slice(0, 10))}</td>
+      <td>${escapeHTML(formatarDataBR(u.created_at.slice(0, 10)))}</td>
       <td>
         <div class="td-actions">
-          <button class="btn-table-action" onclick="abrirModalEdicaoUsuario('${u.id}', '${u.nome}', '${u.email}', '${u.login}', '${u.cargo}')">
+          <button class="btn-table-action" onclick="abrirModalEdicaoUsuario('${escapeHTML(u.id)}', '${escapeHTML(u.nome)}', '${escapeHTML(u.email)}', '${escapeHTML(u.login)}', '${escapeHTML(u.cargo)}')">
             <i data-lucide="user-cog"></i> Editar
           </button>
           ${u.login !== 'admin' ? `
-            <button class="btn-table-action btn-delete" onclick="deletarUsuarioSistema('${u.id}', '${u.nome}')">
+            <button class="btn-table-action btn-delete" onclick="deletarUsuarioSistema('${escapeHTML(u.id)}', '${escapeHTML(u.nome)}')">
               <i data-lucide="user-x"></i> Excluir
             </button>
           ` : ''}
@@ -612,9 +655,9 @@ async function renderizarLinhaDoTempo(processoId) {
     item.className = 'timeline-item';
     item.innerHTML = `
       <div class="timeline-meta">
-        <strong>${h.usuario_nome}</strong> &bull; ${h.acao} &bull; ${new Date(h.data_hora).toLocaleString('pt-BR')}
+        <strong>${escapeHTML(h.usuario_nome)}</strong> &bull; ${escapeHTML(h.acao)} &bull; ${escapeHTML(new Date(h.data_hora).toLocaleString('pt-BR'))}
       </div>
-      <div class="timeline-desc">${h.detalhes}</div>
+      <div class="timeline-desc">${escapeHTML(h.detalhes)}</div>
     `;
     timelineContainer.appendChild(item);
   });
@@ -670,6 +713,11 @@ const inicializarApp = async () => {
   window.lucide.createIcons();
 
   // 1. Tentar Login Automático
+  try {
+    await restaurarSessaoSupabase();
+  } catch (err) {
+    console.error("Erro ao sincronizar sessão no início:", err);
+  }
   const user = getCurrentUser();
   if (user) {
     showDashboard(user);
@@ -679,17 +727,36 @@ const inicializarApp = async () => {
   }
 
   // 2. Formulário de Login
-  document.getElementById('login-form').addEventListener('submit', async (e) => {
+  const loginForm = document.getElementById('login-form');
+  loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const loginUser = document.getElementById('login-user').value;
+    const loginUser = document.getElementById('login-user').value.trim();
     const loginPass = document.getElementById('login-pass').value;
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
+
+    if (!loginUser) {
+      showToast("Por favor, digite seu usuário ou e-mail.", "warning");
+      return;
+    }
+    if (!loginPass) {
+      showToast("Por favor, insira sua senha.", "warning");
+      return;
+    }
+
+    setButtonLoading(submitBtn, true, "Acessando...");
 
     try {
       const loggedUser = await login(loginUser, loginPass);
       showToast(`Bem-vindo, ${loggedUser.nome}!`, 'success');
       showDashboard(loggedUser);
     } catch (err) {
-      showToast(err.message, 'error');
+      let msg = err.message;
+      if (msg === "Failed to fetch") {
+        msg = "Sem conexão com o servidor. Verifique sua internet.";
+      }
+      showToast(msg, 'error');
+    } finally {
+      setButtonLoading(submitBtn, false);
     }
   });
 
@@ -823,9 +890,9 @@ const inicializarApp = async () => {
               pItem.style.paddingBottom = '5px';
               pItem.innerHTML = `
                 <div style="color: var(--text-muted); font-size: 10.5px;">
-                  <strong>${h.usuario_nome}</strong> &bull; ${h.acao} &bull; ${new Date(h.data_hora).toLocaleString('pt-BR')}
+                  <strong>${escapeHTML(h.usuario_nome)}</strong> &bull; ${escapeHTML(h.acao)} &bull; ${escapeHTML(new Date(h.data_hora).toLocaleString('pt-BR'))}
                 </div>
-                <div style="margin-top: 2px;">${h.detalhes}</div>
+                <div style="margin-top: 2px;">${escapeHTML(h.detalhes)}</div>
               `;
               timelineDiv.appendChild(pItem);
             });
@@ -877,9 +944,11 @@ const inicializarApp = async () => {
   }
 
   // 8. Salvar Processo (Novo ou Edição)
-  document.getElementById('form-processo').addEventListener('submit', async (e) => {
+  const formProcesso = document.getElementById('form-processo');
+  formProcesso.addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('process-id-input').value;
+    const submitBtn = formProcesso.querySelector('button[type="submit"]');
 
     const procData = {
       nome_cliente: document.getElementById('proc-nome-cliente').value.trim(),
@@ -891,7 +960,42 @@ const inicializarApp = async () => {
       observacoes: document.getElementById('proc-observacoes').value.trim()
     };
 
+    // Validações imediatas
+    if (!procData.nome_cliente) {
+      showToast("Nome do cliente é obrigatório.", "warning");
+      return;
+    }
+
+    if (procData.numero_processo && procData.numero_processo !== 'Não informado') {
+      const cnjRegex = /^\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}$/;
+      if (!cnjRegex.test(procData.numero_processo)) {
+        showToast("Número de processo inválido. Padrão CNJ: NNNNNNN-DD.AAAA.J.TR.OOOO", "warning");
+        return;
+      }
+    }
+
+    if (procData.telefone) {
+      // Remove parênteses, traços e espaços para validar
+      const cleanPhone = procData.telefone.replace(/\D/g, '');
+      if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+        showToast("Telefone inválido. Deve possuir DDD + 8 ou 9 dígitos.", "warning");
+        return;
+      }
+    }
+
+    if (!procData.advogado_responsavel) {
+      showToast("Selecione o advogado responsável.", "warning");
+      return;
+    }
+
+    if (!procData.data_limite) {
+      showToast("A data limite do prazo é obrigatória.", "warning");
+      return;
+    }
+
     const isCompleted = procData.status_processo === 'Concluído' || procData.status_processo === 'Prazo Cumprido';
+
+    setButtonLoading(submitBtn, true, "Salvando...");
 
     try {
       const currentUser = getCurrentUser();
@@ -922,6 +1026,8 @@ const inicializarApp = async () => {
       atualizarTelas();
     } catch (err) {
       showToast(err.message, 'error');
+    } finally {
+      setButtonLoading(submitBtn, false);
     }
   });
 
@@ -933,11 +1039,15 @@ const inicializarApp = async () => {
   });
 
   // 10. Registrar Nota na Linha do Tempo Manual
-  document.getElementById('form-add-timeline-note').addEventListener('submit', async (e) => {
+  const formAddNote = document.getElementById('form-add-timeline-note');
+  formAddNote.addEventListener('submit', async (e) => {
     e.preventDefault();
     const procId = e.target.getAttribute('data-processo-id');
     const note = document.getElementById('timeline-note-input').value.trim();
+    const submitBtn = formAddNote.querySelector('button[type="submit"]');
     if (!note) return;
+
+    setButtonLoading(submitBtn, true, "Gravando...");
 
     try {
       await addHistorico(procId, "Anotação Manual", note, getCurrentUser());
@@ -946,6 +1056,8 @@ const inicializarApp = async () => {
       await renderizarLinhaDoTempo(procId);
     } catch (err) {
       showToast(err.message, 'error');
+    } finally {
+      setButtonLoading(submitBtn, false);
     }
   });
 
@@ -1019,17 +1131,49 @@ const inicializarApp = async () => {
     const loginName = document.getElementById('user-username').value.trim();
     const cargo = document.getElementById('user-permission').value;
     const senha = document.getElementById('user-pass').value;
+    const submitBtn = document.getElementById('form-usuario').querySelector('button[type="submit"]');
 
-    if (!email) {
+    if (!nome) {
+      showToast("O nome completo é obrigatório.", "warning");
+      return;
+    }
+
+    if (email) {
+      const emailRegex = /^\S+@\S+\.\S+$/;
+      if (!emailRegex.test(email)) {
+        showToast("Formato de e-mail inválido.", "warning");
+        return;
+      }
+    } else {
       email = `${loginName.toLowerCase()}@sememail.com`;
     }
 
-    const payload = { nome, email, login: loginName, cargo };
-
-    // Criptografa senha apenas se fornecida
-    if (senha) {
-      payload.senha = await hashSenha(senha);
+    if (!loginName) {
+      showToast("O login é obrigatório.", "warning");
+      return;
     }
+    const loginRegex = /^[a-zA-Z0-9_\-\.]+$/;
+    if (!loginRegex.test(loginName)) {
+      showToast("Login inválido. Não utilize espaços ou caracteres especiais.", "warning");
+      return;
+    }
+
+    if (!id && !senha) {
+      showToast("A senha é obrigatória para cadastrar novos usuários.", "warning");
+      return;
+    }
+
+    if (senha && senha.trim().length < 6) {
+      showToast("A senha deve ter pelo menos 6 caracteres.", "warning");
+      return;
+    }
+
+    const payload = { nome, email, login: loginName, cargo };
+    if (senha) {
+      payload.senha = senha.trim();
+    }
+
+    setButtonLoading(submitBtn, true, "Salvando...");
 
     try {
       const currentUser = getCurrentUser();
@@ -1037,7 +1181,6 @@ const inicializarApp = async () => {
         await editUsuario(id, payload, currentUser);
         showToast("Dados do usuário atualizados.", 'success');
       } else {
-        if (!senha) throw new Error("A senha é obrigatória para novos cadastros!");
         await addUsuario(payload, currentUser);
         showToast("Novo usuário criado com sucesso!", 'success');
       }
@@ -1045,6 +1188,8 @@ const inicializarApp = async () => {
       atualizarTelas();
     } catch (err) {
       showToast(err.message, 'error');
+    } finally {
+      setButtonLoading(submitBtn, false);
     }
   });
 

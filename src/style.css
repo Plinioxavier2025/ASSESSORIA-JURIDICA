@@ -247,6 +247,7 @@ h6 {
   0% {
     transform: translate(-28%, -18%) rotate(0deg);
   }
+
   100% {
     transform: translate(-30%, -15%) rotate(-1.5deg);
   }
@@ -256,6 +257,7 @@ h6 {
   0% {
     transform: translate(18%, 12%) rotate(0deg);
   }
+
   100% {
     transform: translate(20%, 14%) rotate(1.5deg);
   }
@@ -286,26 +288,87 @@ h6 {
   box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
 }
 
-.particle:nth-child(1) { left: 10%; width: 2px; height: 2px; animation-duration: 18s; animation-delay: 0s; }
-.particle:nth-child(2) { left: 25%; width: 4px; height: 4px; animation-duration: 22s; animation-delay: 3s; opacity: 0.6; }
-.particle:nth-child(3) { left: 40%; width: 1.5px; height: 1.5px; animation-duration: 14s; animation-delay: 1s; }
-.particle:nth-child(4) { left: 55%; width: 3px; height: 3px; animation-duration: 20s; animation-delay: 5s; }
-.particle:nth-child(5) { left: 70%; width: 2px; height: 2px; animation-duration: 16s; animation-delay: 2s; opacity: 0.5; }
-.particle:nth-child(6) { left: 85%; width: 5px; height: 5px; animation-duration: 25s; animation-delay: 7s; opacity: 0.3; }
-.particle:nth-child(7) { left: 15%; width: 3px; height: 3px; animation-duration: 19s; animation-delay: 4s; }
-.particle:nth-child(8) { left: 90%; width: 2px; height: 2px; animation-duration: 15s; animation-delay: 6s; }
+.particle:nth-child(1) {
+  left: 10%;
+  width: 2px;
+  height: 2px;
+  animation-duration: 18s;
+  animation-delay: 0s;
+}
+
+.particle:nth-child(2) {
+  left: 25%;
+  width: 4px;
+  height: 4px;
+  animation-duration: 22s;
+  animation-delay: 3s;
+  opacity: 0.6;
+}
+
+.particle:nth-child(3) {
+  left: 40%;
+  width: 1.5px;
+  height: 1.5px;
+  animation-duration: 14s;
+  animation-delay: 1s;
+}
+
+.particle:nth-child(4) {
+  left: 55%;
+  width: 3px;
+  height: 3px;
+  animation-duration: 20s;
+  animation-delay: 5s;
+}
+
+.particle:nth-child(5) {
+  left: 70%;
+  width: 2px;
+  height: 2px;
+  animation-duration: 16s;
+  animation-delay: 2s;
+  opacity: 0.5;
+}
+
+.particle:nth-child(6) {
+  left: 85%;
+  width: 5px;
+  height: 5px;
+  animation-duration: 25s;
+  animation-delay: 7s;
+  opacity: 0.3;
+}
+
+.particle:nth-child(7) {
+  left: 15%;
+  width: 3px;
+  height: 3px;
+  animation-duration: 19s;
+  animation-delay: 4s;
+}
+
+.particle:nth-child(8) {
+  left: 90%;
+  width: 2px;
+  height: 2px;
+  animation-duration: 15s;
+  animation-delay: 6s;
+}
 
 @keyframes riseParticle {
   0% {
     transform: translateY(0) translateX(0) scale(1);
     opacity: 0;
   }
+
   10% {
     opacity: 1;
   }
+
   90% {
     opacity: 1;
   }
+
   100% {
     transform: translateY(-110vh) translateX(50px) scale(0.5);
     opacity: 0;
@@ -2126,6 +2189,7 @@ h6 {
 }
 
 @media (max-width: 576px) {
+
   /* TELA DE LOGIN RESPONSIVA */
   .login-box {
     width: 90% !important;
@@ -2270,7 +2334,8 @@ h6 {
   }
 
   .deadline-alerts-bar::-webkit-scrollbar {
-    display: none; /* esconde scrollbar para parecer mais nativo */
+    display: none;
+    /* esconde scrollbar para parecer mais nativo */
   }
 
   .alert-indicator-card {
@@ -2355,4 +2420,64 @@ h6 {
   .filter-wrapper {
     width: 100%;
   }
+}
+
+/* =========================================================================
+   ESTILOS DE LOADING E ACESSIBILIDADE MOBILE (AUDITORIA DE SEGURANÇA)
+   ========================================================================= */
+
+/* Spinner para botões em estado de carregamento */
+.spinner-loading {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--text-white);
+  animation: spin-loader 0.8s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin-loader {
+  to { transform: rotate(360deg); }
+}
+
+/* Botão desabilitado/loading */
+.btn-loading {
+  pointer-events: none !important;
+  opacity: 0.75 !important;
+  cursor: not-allowed !important;
+}
+
+/* Pseudo-elementos para expandir touch targets no mobile (mínimo de 44x44px) */
+.btn-quick-action,
+.btn-table-action,
+.btn-close-modal,
+.btn-logout {
+  position: relative;
+}
+
+.btn-quick-action::before,
+.btn-close-modal::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  z-index: 1;
+}
+
+.btn-table-action::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 44px;
 }

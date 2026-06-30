@@ -1,8 +1,8 @@
-import { getUsuarios, registrarAuditoria, isSupabaseConnected, secureLogin } from './db.js';
+import { getUsuarios, registrarAuditoria, isSupabaseConnected, getSupabase } from './db.js';
 
 let currentUser = null;
 
-// Helper nativo para gerar hash SHA-256 (seguro e limpo)
+// Helper nativo para gerar hash SHA-256 (seguro e limpo) - usado apenas no fallback local
 export async function hashSenha(senhaPlana) {
   try {
     const msgUint8 = new TextEncoder().encode(senhaPlana);
@@ -23,7 +23,7 @@ export async function hashSenha(senhaPlana) {
   }
 }
 
-// Tenta restaurar a sessão ao carregar a página
+// Tenta restaurar a sessão do sessionStorage ao carregar a página
 const savedSession = sessionStorage.getItem('as_session');
 if (savedSession) {
   try {
@@ -37,46 +37,232 @@ export function getCurrentUser() {
   return currentUser;
 }
 
+// Restaura a sessão oficial do Supabase Auth e sincroniza com o front-end
+export async function restaurarSessaoSupabase() {
+  if (isSupabaseConnected()) {
+    try {
+      const supabase = getSupabase();
+      if (!supabase) return;
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (!error && session && session.user) {
+        // Busca perfil atualizado na tabela public.usuarios
+        const { data: profile, error: profileErr } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (!profileErr && profile) {
+          currentUser = {
+            id: profile.id,
+            nome: profile.nome,
+            email: profile.email,
+            login: profile.login,
+            cargo: profile.cargo,
+            token: session.access_token
+          };
+          sessionStorage.setItem('as_session', JSON.stringify(currentUser));
+        } else {
+          // Fallback para os metadados do usuário
+          currentUser = {
+            id: session.user.id,
+            nome: session.user.user_metadata?.nome || "Usuário",
+            email: session.user.email,
+            login: session.user.user_metadata?.login || session.user.email.split('@')[0],
+            cargo: session.user.user_metadata?.cargo || "Operador",
+            token: session.access_token
+          };
+          sessionStorage.setItem('as_session', JSON.stringify(currentUser));
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao sincronizar sessão Supabase no início:", e);
+    }
+  }
+}
+
+// Login unificado: Supabase Auth (Oficial) com Fallback Local
 export async function login(username, password) {
-  const hashedInput = await hashSenha(password.trim());
   let user = null;
+  let errorMsg = null;
   
   if (isSupabaseConnected()) {
-    user = await secureLogin(username, hashedInput);
+    try {
+      const supabase = getSupabase();
+      if (supabase) {
+        // Tratamento para aceitar login via username:
+        // Caso o usuário não digite o e-mail completo, completa-se automaticamente
+        let email = username.trim();
+        if (!email.includes('@')) {
+          email = email.toLowerCase() + "@aviladesouza.adv.br";
+        }
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password.trim()
+        });
+        
+        if (error) {
+          errorMsg = error.message;
+          // Traduzir erros comuns de login
+          if (errorMsg === "Invalid login credentials" || errorMsg.includes("invalid-credential") || errorMsg.includes("Invalid credentials")) {
+            errorMsg = "E-mail ou senha incorretos.";
+          } else if (errorMsg.includes("Email not confirmed")) {
+            errorMsg = "E-mail cadastrado ainda não foi confirmado.";
+          }
+        } else if (data && data.user) {
+          // Busca perfil do banco de dados (public.usuarios)
+          const { data: profile, error: profileErr } = await supabase
+            .from('usuarios')
+            .select('*')
+            .eq('id', data.user.id)
+            .single();
+            
+          if (!profileErr && profile) {
+            user = {
+              id: profile.id,
+              nome: profile.nome,
+              email: profile.email,
+              login: profile.login,
+              cargo: profile.cargo,
+              token: data.session?.access_token
+            };
+          } else {
+            user = {
+              id: data.user.id,
+              nome: data.user.user_metadata?.nome || "Usuário",
+              email: data.user.email,
+              login: data.user.user_metadata?.login || username,
+              cargo: data.user.user_metadata?.cargo || "Operador",
+              token: data.session?.access_token
+            };
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Erro na autenticação oficial do Supabase:", e);
+      errorMsg = e.message;
+    }
   }
   
+  // Se o Supabase falhou ou não está conectado, faz o fallback para o banco local (LocalStorage)
   if (!user) {
-    // Fallback local
-    const users = await getUsuarios();
-    user = users.find(u => u.login.trim().toLowerCase() === username.trim().toLowerCase() && u.senha === hashedInput);
+    const hashedInput = await hashSenha(password.trim());
+    let localUsers = [];
+    try {
+      const localData = localStorage.getItem('as_usuarios');
+      localUsers = localData ? JSON.parse(localData) : [];
+    } catch (e) {
+      console.error("Erro ao ler usuários locais para fallback:", e);
+    }
+    
+    // Se o localStorage estiver vazio, usa os padrões definidos no projeto
+    if (localUsers.length === 0) {
+      localUsers = [
+        {
+          id: "u-admin",
+          nome: "Administrador Master",
+          email: "admin@aviladesouza.adv.br",
+          login: "admin",
+          senha: "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+          cargo: "Administrador"
+        },
+        {
+          id: "u-regina",
+          nome: "Dra. Regina Silva",
+          email: "regina@aviladesouza.adv.br",
+          login: "regina",
+          senha: "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+          cargo: "Operador"
+        },
+        {
+          id: "u-eloi",
+          nome: "Dr. Eloi Souza",
+          email: "eloi@aviladesouza.adv.br",
+          login: "eloi",
+          senha: "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+          cargo: "Operador"
+        }
+      ];
+    }
+
+    const localUser = localUsers.find(u => u.login.trim().toLowerCase() === username.trim().toLowerCase() && u.senha === hashedInput);
+    
+    if (localUser) {
+      user = {
+        id: localUser.id,
+        nome: localUser.nome,
+        email: localUser.email,
+        login: localUser.login,
+        cargo: localUser.cargo
+      };
+    }
   }
   
   if (user) {
-    currentUser = {
-      id: user.id,
-      nome: user.nome,
-      email: user.email,
-      login: user.login,
-      cargo: user.cargo,
-      password_hash: hashedInput // Salva o hash da senha na sessão para autenticação no banco
-    };
+    currentUser = user;
     sessionStorage.setItem('as_session', JSON.stringify(currentUser));
-    
     await registrarAuditoria("Login", `Usuário "${currentUser.nome}" realizou login com sucesso no sistema.`, currentUser);
     return currentUser;
   } else {
     await registrarAuditoria("Tentativa de Login", `Tentativa de login malsucedida para o usuário: "${username}".`, null);
-    throw new Error("Usuário ou senha incorretos!");
+    throw new Error(errorMsg || "E-mail ou senha incorretos.");
   }
 }
 
+// Encerramento de sessão oficial
 export async function logout() {
   if (currentUser) {
     const userForAudit = { ...currentUser };
     currentUser = null;
     sessionStorage.removeItem('as_session');
+    
+    if (isSupabaseConnected()) {
+      try {
+        const supabase = getSupabase();
+        if (supabase) {
+          await supabase.auth.signOut();
+        }
+      } catch (e) {
+        console.error("Erro ao realizar logout do Supabase:", e);
+      }
+    }
+    
     await registrarAuditoria("Logout", `Usuário "${userForAudit.nome}" encerrou a sessão.`, userForAudit);
   }
+}
+
+// Alteração de senha do próprio usuário logado
+export async function alterarSenhaPropria(novaSenha) {
+  if (isSupabaseConnected()) {
+    try {
+      const supabase = getSupabase();
+      if (supabase) {
+        const { error } = await supabase.auth.updateUser({ password: novaSenha.trim() });
+        if (error) {
+          if (error.message.includes("at least 6 characters")) {
+            throw new Error("A senha deve ter pelo menos 6 caracteres.");
+          }
+          throw new Error(error.message);
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao alterar senha no Supabase:", e);
+      throw e;
+    }
+  } else {
+    // No fallback local, salvamos no localStorage editando o registro correspondente
+    const usuarios = await getUsuarios();
+    if (currentUser) {
+      const idx = usuarios.findIndex(u => u.id === currentUser.id);
+      if (idx !== -1) {
+        usuarios[idx].senha = await hashSenha(novaSenha.trim());
+        localStorage.setItem('as_usuarios', JSON.stringify(usuarios));
+      }
+    }
+  }
+  await registrarAuditoria("Alteração de Senha", "O usuário alterou sua própria senha com sucesso.", currentUser);
 }
 
 export function isAdmin() {
@@ -102,12 +288,6 @@ export function checkPermission(action) {
     'ver_historico_processo',
     'adicionar_historico_processo'
   ];
-  
-  // Ações bloqueadas explicitamente para Operador:
-  // - 'criar_usuario', 'editar_usuario', 'deletar_usuario' (Gerenciamento de Usuários)
-  // - 'alterar_senhas_outros' (Segurança de credenciais de terceiros)
-  // - 'alterar_configuracoes' (Configurações globais de conexão Supabase)
-  // - 'excluir_processo' (Apenas administradores podem remover por segurança jurídica)
   
   return allowedOperatorActions.includes(action);
 }
