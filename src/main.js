@@ -55,8 +55,9 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
   }
 }
 
-// DATA ATUAL FIXA DO SISTEMA
-const DATA_HOJE_SISTEMA = new Date('2026-06-15T00:00:00');
+// DATA ATUAL DO SISTEMA (DINÂMICA)
+const DATA_HOJE_SISTEMA = new Date();
+DATA_HOJE_SISTEMA.setHours(0, 0, 0, 0);
 
 // ----------------- AUXILIARES E UTILITÁRIOS -----------------
 

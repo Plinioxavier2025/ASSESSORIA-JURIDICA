@@ -1,11 +1,12 @@
 import { getProcessos } from './db.js';
 
-// Função auxiliar para calcular dias restantes baseado na data fixa do sistema 2026-06-15
+// Função auxiliar para calcular dias restantes baseado na data atual do sistema
 function obterDiasRestantes(dataLimiteStr) {
   if (!dataLimiteStr) return 0;
   // Forçar fuso local para evitar perda de dia
   const dataLimite = new Date(dataLimiteStr + 'T00:00:00');
-  const hoje = new Date('2026-06-15T00:00:00');
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
   const diffTime = dataLimite - hoje;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
