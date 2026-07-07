@@ -26,7 +26,8 @@ import {
   isAdmin,
   checkPermission,
   hashSenha,
-  restaurarSessaoSupabase
+  restaurarSessaoSupabase,
+  alterarSenhaPropria
 } from './auth.js';
 
 import { exportarPDFRelatorio } from './reports.js';
@@ -600,6 +601,17 @@ function renderizarConfiguracoes() {
   const backupEl = document.getElementById('backup-last-time');
   if (backupEl) {
     backupEl.textContent = lastBackup;
+  }
+
+  // Ocultar card de backup para operadores
+  const currentUser = getCurrentUser();
+  const backupCard = document.getElementById('settings-card-backup');
+  if (backupCard) {
+    if (currentUser && currentUser.cargo === 'Administrador') {
+      backupCard.style.display = 'block';
+    } else {
+      backupCard.style.display = 'none';
+    }
   }
 }
 
@@ -1245,6 +1257,41 @@ const inicializarApp = async () => {
     reader.readAsText(file);
     e.target.value = ''; // Limpar input
   });
+
+  // 16. Configurações - Alterar Minha Senha
+  const formAlterarSenha = document.getElementById('form-alterar-senha-propria');
+  if (formAlterarSenha) {
+    formAlterarSenha.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const currentPass = document.getElementById('change-pass-current').value;
+      const newPass = document.getElementById('change-pass-new').value;
+      const confirmPass = document.getElementById('change-pass-confirm').value;
+      const submitBtn = formAlterarSenha.querySelector('button[type="submit"]');
+
+      if (newPass.length < 6) {
+        showToast("A nova senha deve ter pelo menos 6 caracteres.", "warning");
+        return;
+      }
+
+      if (newPass !== confirmPass) {
+        showToast("A nova senha e a confirmação não coincidem.", "warning");
+        return;
+      }
+
+      setButtonLoading(submitBtn, true, "Atualizando...");
+
+      try {
+        await alterarSenhaPropria(currentPass, newPass);
+        showToast("Senha alterada com sucesso!", "success");
+        formAlterarSenha.reset();
+      } catch (err) {
+        showToast(err.message, "error");
+      } finally {
+        setButtonLoading(submitBtn, false);
+      }
+    });
+  }
 };
 
 if (document.readyState === 'loading') {
@@ -1265,15 +1312,14 @@ async function showDashboard(userObj) {
   document.getElementById('user-display-name').textContent = userObj.nome;
   document.getElementById('user-display-role').textContent = userObj.cargo;
 
-  // Mostrar abas restritas de gerenciamento de usuários e configurações se admin
+  // Mostrar abas restritas de gerenciamento de usuários se admin. Configurações fica visível para todos.
   const navUser = document.getElementById('nav-item-usuarios');
   const navConfig = document.getElementById('nav-item-configuracoes');
+  if (navConfig) navConfig.style.display = 'block'; // Visível para todos os usuários logados
   if (userObj.cargo === 'Administrador') {
     if (navUser) navUser.style.display = 'block';
-    if (navConfig) navConfig.style.display = 'block';
   } else {
     if (navUser) navUser.style.display = 'none';
-    if (navConfig) navConfig.style.display = 'none';
   }
 
   // Preencher e desenhar os cards/tabelas

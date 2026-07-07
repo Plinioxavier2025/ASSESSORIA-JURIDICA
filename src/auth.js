@@ -234,11 +234,27 @@ export async function logout() {
 }
 
 // Alteração de senha do próprio usuário logado
-export async function alterarSenhaPropria(novaSenha) {
+export async function alterarSenhaPropria(senhaAtual, novaSenha) {
+  if (!currentUser) {
+    throw new Error("Usuário não autenticado.");
+  }
+
   if (isSupabaseConnected()) {
     try {
       const supabase = getSupabase();
       if (supabase) {
+        // 1. Validar a senha antiga realizando uma tentativa de login temporária
+        let email = currentUser.email;
+        const { error: loginErr } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: senhaAtual.trim()
+        });
+
+        if (loginErr) {
+          throw new Error("Senha atual incorreta.");
+        }
+
+        // 2. Atualizar a senha para o valor novo
         const { error } = await supabase.auth.updateUser({ password: novaSenha.trim() });
         if (error) {
           if (error.message.includes("at least 6 characters")) {
@@ -252,17 +268,21 @@ export async function alterarSenhaPropria(novaSenha) {
       throw e;
     }
   } else {
-    // No fallback local, salvamos no localStorage editando o registro correspondente
+    // No fallback local, verificamos e salvamos no localStorage
     const usuarios = await getUsuarios();
-    if (currentUser) {
-      const idx = usuarios.findIndex(u => u.id === currentUser.id);
-      if (idx !== -1) {
-        usuarios[idx].senha = await hashSenha(novaSenha.trim());
-        localStorage.setItem('as_usuarios', JSON.stringify(usuarios));
+    const idx = usuarios.findIndex(u => u.id === currentUser.id);
+    if (idx !== -1) {
+      const currentHashed = await hashSenha(senhaAtual.trim());
+      if (usuarios[idx].senha !== currentHashed) {
+        throw new Error("Senha atual incorreta.");
       }
+      usuarios[idx].senha = await hashSenha(novaSenha.trim());
+      localStorage.setItem('as_usuarios', JSON.stringify(usuarios));
+    } else {
+      throw new Error("Usuário não encontrado localmente.");
     }
   }
-  await registrarAuditoria("Alteração de Senha", "O usuário alterou sua própria senha com sucesso.", currentUser);
+  await registrarAuditoria("Alteração de Senha", `O usuário "${currentUser.nome}" alterou sua própria senha com sucesso.`, currentUser);
 }
 
 export function isAdmin() {
@@ -286,7 +306,8 @@ export function checkPermission(action) {
     'editar_processo',
     'concluir_prazo',
     'ver_historico_processo',
-    'adicionar_historico_processo'
+    'adicionar_historico_processo',
+    'ver_configuracoes'
   ];
   
   return allowedOperatorActions.includes(action);

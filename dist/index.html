@@ -27,7 +27,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.6.0/dist/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.js"></script>
-  <script type="module" crossorigin src="./assets/index-BU9m7DgI.js"></script>
+  <script type="module" crossorigin src="./assets/index-BnL7sxzo.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-CA4AZCtW.css">
 </head>
 <body>
@@ -479,9 +479,42 @@
         <!-- 6. ABA CONFIGURAÇÕES -->
         <section id="tab-configuracoes" class="app-tab-view">
           <div class="settings-layout-grid">
+
+            <!-- Bloco 1: Alterar Minha Senha -->
+            <div class="corporate-settings-card" style="grid-column: span 2;">
+              <div class="card-header-styled">
+                <i data-lucide="key-round"></i>
+                <h3>Alterar Minha Senha</h3>
+              </div>
+              <div class="card-body-styled">
+                <p class="settings-block-desc">
+                  Para a segurança da sua conta, atualize sua senha periodicamente. A nova senha deve conter pelo menos 6 caracteres.
+                </p>
+                <form id="form-alterar-senha-propria" style="max-width: 480px;">
+                  <div class="form-control-group">
+                    <label for="change-pass-current"><i data-lucide="lock"></i> Senha Atual</label>
+                    <input type="password" id="change-pass-current" required placeholder="Digite sua senha atual">
+                  </div>
+                  <div class="form-control-group">
+                    <label for="change-pass-new"><i data-lucide="key-round"></i> Nova Senha</label>
+                    <input type="password" id="change-pass-new" required placeholder="Nova senha (mínimo 6 caracteres)">
+                  </div>
+                  <div class="form-control-group">
+                    <label for="change-pass-confirm"><i data-lucide="check-square"></i> Confirmar Nova Senha</label>
+                    <input type="password" id="change-pass-confirm" required placeholder="Confirme a nova senha">
+                  </div>
+                  <div style="margin-top: 15px;">
+                    <button type="submit" class="btn-action-primary" style="width: auto; padding: 10px 24px;">
+                      <i data-lucide="save"></i>
+                      <span>Atualizar Senha</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
             
             <!-- Bloco 2: Segurança & Backup -->
-            <div class="corporate-settings-card" style="grid-column: span 2;">
+            <div id="settings-card-backup" class="corporate-settings-card" style="grid-column: span 2;">
               <div class="card-header-styled">
                 <i data-lucide="shield-check"></i>
                 <h3>Segurança, Backup e Recuperação</h3>
