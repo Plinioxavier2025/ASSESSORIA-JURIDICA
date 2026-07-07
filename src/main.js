@@ -538,7 +538,6 @@ async function renderizarTabelaUsuarios() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${escapeHTML(u.nome)}</strong></td>
-      <td>${escapeHTML(u.email)}</td>
       <td><code>${escapeHTML(u.login)}</code></td>
       <td>
         <span class="status-badge ${escapeHTML(u.cargo === 'Administrador' ? 'badge-protocolado' : 'badge-andamento')}">
@@ -568,7 +567,6 @@ window.abrirModalEdicaoUsuario = function (id, nome, email, login, cargo) {
   document.getElementById('user-modal-title').textContent = "Editar Usuário";
   document.getElementById('user-id-input').value = id;
   document.getElementById('user-nome-completo').value = nome;
-  document.getElementById('user-email').value = email;
   document.getElementById('user-username').value = login;
   document.getElementById('user-permission').value = cargo;
 
@@ -1140,7 +1138,6 @@ const inicializarApp = async () => {
     e.preventDefault();
     const id = document.getElementById('user-id-input').value;
     const nome = document.getElementById('user-nome-completo').value.trim();
-    let email = document.getElementById('user-email').value.trim();
     const loginName = document.getElementById('user-username').value.trim();
     const cargo = document.getElementById('user-permission').value;
     const senha = document.getElementById('user-pass').value;
@@ -1151,25 +1148,18 @@ const inicializarApp = async () => {
       return;
     }
 
-    if (email) {
-      const emailRegex = /^\S+@\S+\.\S+$/;
-      if (!emailRegex.test(email)) {
-        showToast("Formato de e-mail inválido.", "warning");
-        return;
-      }
-    } else {
-      email = `${loginName.toLowerCase()}@sememail.com`;
-    }
-
     if (!loginName) {
       showToast("O login é obrigatório.", "warning");
       return;
     }
+
     const loginRegex = /^[a-zA-Z0-9_\-\.]+$/;
     if (!loginRegex.test(loginName)) {
       showToast("Login inválido. Não utilize espaços ou caracteres especiais.", "warning");
       return;
     }
+
+    const email = `${loginName.toLowerCase()}@aviladesouza.adv.br`;
 
     if (!id && !senha) {
       showToast("A senha é obrigatória para cadastrar novos usuários.", "warning");
