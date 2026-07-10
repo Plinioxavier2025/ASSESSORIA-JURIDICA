@@ -1693,25 +1693,13 @@ const inicializarApp = async () => {
   const inputPdfFile = document.getElementById('input-pdf-file');
   const pdfLoadingStatus = document.getElementById('pdf-loading-status');
   const pdfLoadingMessage = document.getElementById('pdf-loading-message');
-  const pdfImportResultsContainer = document.getElementById('pdf-import-results-container');
-  const pdfPublicationsList = document.getElementById('pdf-publications-list');
-  const pdfResultsCount = document.getElementById('pdf-results-count');
-  const pdfPublicationDetailsPanel = document.getElementById('pdf-publication-details-panel');
-  let activePublications = [];
-  let selectedPubIndex = null;
 
   if (btnOpenImportPdf) {
     btnOpenImportPdf.addEventListener('click', () => {
       pdfDropzone.style.display = 'flex';
       pdfLoadingStatus.style.display = 'none';
-      pdfImportResultsContainer.style.display = 'none';
-      pdfPublicationsList.innerHTML = '';
       if (inputPdfFile) inputPdfFile.value = '';
       
-      // Limpar painel de detalhes e estado
-      activePublications = [];
-      mostrarDetalhesVazio();
-
       modalImportPdf.style.display = 'flex';
       window.lucide.createIcons();
     });
