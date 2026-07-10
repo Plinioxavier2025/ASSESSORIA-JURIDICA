@@ -299,8 +299,9 @@ function calcularDataLimitePublicacao(blockText, pdfBaseDate, extractedDays, has
 
   // 2. Se há prazo explícito detectado (ex: "5 dias", "15 dias")
   if (hasDetectedDays) {
-    const isBackwards = /antes\s+(?:de\s+|da\s+|do\s+)?(?:realizacao\s+)?(?:de\s+|da\s+|do\s+)?(?:audiencia|pericia)/i.test(blockText) || 
-                        /antecedencia\s+(?:de\s+|da\s+|do\s+)?(?:audiencia|pericia)/i.test(blockText);
+    const normalizedBlockText = blockText.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const isBackwards = /antes\s+(?:de\s+|da\s+|do\s+)?(?:realizacao\s+)?(?:de\s+|da\s+|do\s+)?(?:audiencia|pericia)/i.test(normalizedBlockText) || 
+                        /antecedencia\s+(?:de\s+|da\s+|do\s+)?(?:audiencia|pericia)/i.test(normalizedBlockText);
     if (isBackwards && futureDates.length > 0) {
       // Prazos regressivos: subtrai dias úteis da data do evento futuro (audiência)
       const targetEventDate = futureDates[0];
