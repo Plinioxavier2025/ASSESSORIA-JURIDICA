@@ -318,125 +318,234 @@ async function loadPDFJS() {
 
 // Analisa o texto do PDF e extrai publicações estruturadas
 function parsePublications(text) {
-  const cnjRegex = /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/g;
+  // Regex to match headers like "21 - D J E N - TJSP", "1 - D J E N - TJSP", with flexible spacing
+  const headerRegex = /\b(\d+)\s*-\s*(D\s*J\s*E\s*N|D\s*J\s*E|D\s*J)\s*-\s*([A-Z0-9]+)\b/gi;
   
   const matches = [];
   let match;
-  while ((match = cnjRegex.exec(text)) !== null) {
+  while ((match = headerRegex.exec(text)) !== null) {
     matches.push({
-      number: match[0],
+      headerText: match[0],
+      pubIndex: parseInt(match[1], 10),
+      tribunal: match[3],
       index: match.index
     });
   }
   
-  if (matches.length === 0) {
-    return [];
-  }
-  
   const publications = [];
   
-  for (let i = 0; i < matches.length; i++) {
-    const current = matches[i];
-    const startIndex = current.index;
-    const endIndex = (i + 1 < matches.length) ? matches[i + 1].index : text.length;
-    const blockText = text.substring(startIndex, endIndex).trim();
-    
-    const processNumber = current.number;
-    
-    // Padrões de Autor/Réu comuns em diários de justiça brasileiros
-    const reqtePattern = /(?:REQTE|REQUERENTE|AUTOR|EXEQUENTE|APELANTE|PACIENTE|IMPETRANTE|AGRAVANTE|RECLAMANTE)\s*:\s*([^-\n\.\;]+)/i;
-    const reqdoPattern = /(?:REQDO|REQUERIDO|R[EÉ]U|EXECUTADO|APELADO|IMPETRADO|AGRAVADO|RECLAMADO)\s*:\s*([^-\n\.\;]+)/i;
-    
-    const reqteMatch = blockText.match(reqtePattern);
-    const reqdoMatch = blockText.match(reqdoPattern);
-    
-    const plaintiff = reqteMatch ? reqteMatch[1].trim() : '';
-    const defendant = reqdoMatch ? reqdoMatch[1].trim() : '';
-    
-    let suggestedClient = plaintiff || defendant || '';
-    
-    if (!suggestedClient) {
-      const vsMatch = blockText.match(/(\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s+(?:x|vs\.?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/);
-      if (vsMatch) {
-        suggestedClient = vsMatch[1].trim();
-      }
-    }
-    
-    if (!suggestedClient) {
-      suggestedClient = 'Cliente não identificado';
-    }
-    
-    const resultPrazo = detectarDiasPrazo(blockText);
-    const extractedDays = resultPrazo.days;
-    const hasDetectedDays = resultPrazo.detected;
-    
-    const datePattern = /\b(\d{2})[\/\.](\d{2})[\/\.](\d{4})\b/;
-    const dateMatch = blockText.match(datePattern);
-    let specificDate = null;
-    if (dateMatch) {
-      const day = dateMatch[1];
-      const month = dateMatch[2];
-      const year = dateMatch[3];
-      specificDate = `${year}-${month}-${day}`;
-    }
-    
-    let calculatedDate;
-    if (hasDetectedDays) {
-      // Prioridade máxima: se o juiz definiu um prazo em dias (ex: 15 dias, quinze dias),
-      // calcula-se adicionando os dias úteis a partir de hoje
-      calculatedDate = adicionarDiasUteis(new Date(), extractedDays).toISOString().split('T')[0];
-    } else if (specificDate) {
-      // Se não detectou prazo em dias, mas encontrou uma data específica (ex: data de audiência)
-      // e essa data é futura, usa essa data diretamente
-      const todayIso = new Date().toISOString().split('T')[0];
-      if (specificDate >= todayIso) {
-        calculatedDate = specificDate;
-      } else {
-        // Se a data específica é no passado (como data de sentença/despacho), usa o prazo padrão
-        calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
-      }
-    } else {
-      // Fallback padrão se nada for detectado
-      calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
-    }
-    
-    let orderText = '';
-    const dispatchKeywords = [/intime[- ]se/i, /manifeste[- ]se/i, /apresente/i, /recolha/i, /fica(?:m)?\s+intimad[ao](?:s)?/i, /cumpra[- ]se/i, /determino/i, /vistos/i, /defiro/i, /indefiro/i];
-    let firstKeywordIndex = -1;
-    
-    for (const kw of dispatchKeywords) {
-      const m = blockText.match(kw);
-      if (m && m.index !== undefined) {
-        if (firstKeywordIndex === -1 || m.index < firstKeywordIndex) {
-          firstKeywordIndex = m.index;
+  if (matches.length > 0) {
+    // Ordenar matches por sua posição no texto para garantir o fatiamento sequencial
+    matches.sort((a, b) => a.index - b.index);
+
+    for (let i = 0; i < matches.length; i++) {
+      const current = matches[i];
+      const startIndex = current.index;
+      const endIndex = (i + 1 < matches.length) ? matches[i + 1].index : text.length;
+      const blockText = text.substring(startIndex, endIndex).trim();
+      
+      const cnjRegex = /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/;
+      const cnjMatch = blockText.match(cnjRegex);
+      const processNumber = cnjMatch ? cnjMatch[0] : 'CNJ não identificado';
+      
+      const reqtePattern = /(?:REQTE|REQUERENTE|AUTOR|EXEQUENTE|APELANTE|PACIENTE|IMPETRANTE|AGRAVANTE|RECLAMANTE)\s*:\s*([^-\n\.\;]+)/i;
+      const reqdoPattern = /(?:REQDO|REQUERIDO|R[EÉ]U|EXECUTADO|APELADO|IMPETRADO|AGRAVADO|RECLAMADO)\s*:\s*([^-\n\.\;]+)/i;
+      
+      const reqteMatch = blockText.match(reqtePattern);
+      const reqdoMatch = blockText.match(reqdoPattern);
+      
+      const plaintiff = reqteMatch ? reqteMatch[1].trim() : '';
+      const defendant = reqdoMatch ? reqdoMatch[1].trim() : '';
+      
+      let suggestedClient = plaintiff || defendant || '';
+      
+      if (!suggestedClient) {
+        const vsMatch = blockText.match(/(\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s+(?:x|vs\.?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/);
+        if (vsMatch) {
+          suggestedClient = vsMatch[1].trim();
         }
       }
+      
+      if (!suggestedClient) {
+        suggestedClient = 'Cliente não identificado';
+      }
+      
+      const resultPrazo = detectarDiasPrazo(blockText);
+      const extractedDays = resultPrazo.days;
+      const hasDetectedDays = resultPrazo.detected;
+      
+      const datePattern = /\b(\d{2})[\/\.](\d{2})[\/\.](\d{4})\b/;
+      const dateMatch = blockText.match(datePattern);
+      let specificDate = null;
+      if (dateMatch) {
+        const day = dateMatch[1];
+        const month = dateMatch[2];
+        const year = dateMatch[3];
+        specificDate = `${year}-${month}-${day}`;
+      }
+      
+      let calculatedDate;
+      if (hasDetectedDays) {
+        calculatedDate = adicionarDiasUteis(new Date(), extractedDays).toISOString().split('T')[0];
+      } else if (specificDate) {
+        const todayIso = new Date().toISOString().split('T')[0];
+        if (specificDate >= todayIso) {
+          calculatedDate = specificDate;
+        } else {
+          calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
+        }
+      } else {
+        calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
+      }
+      
+      let orderText = '';
+      const dispatchKeywords = [/intime[- ]se/i, /manifeste[- ]se/i, /apresente/i, /recolha/i, /fica(?:m)?\s+intimad[ao](?:s)?/i, /cumpra[- ]se/i, /determino/i, /vistos/i, /defiro/i, /indefiro/i];
+      let firstKeywordIndex = -1;
+      
+      for (const kw of dispatchKeywords) {
+        const m = blockText.match(kw);
+        if (m && m.index !== undefined) {
+          if (firstKeywordIndex === -1 || m.index < firstKeywordIndex) {
+            firstKeywordIndex = m.index;
+          }
+        }
+      }
+      
+      if (firstKeywordIndex !== -1) {
+        orderText = blockText.substring(firstKeywordIndex).trim();
+      } else {
+        orderText = blockText.replace(processNumber, '').trim();
+      }
+      
+      orderText = orderText.replace(/\s+/g, ' ');
+      if (orderText.length > 500) {
+        orderText = orderText.substring(0, 500) + '...';
+      }
+      
+      publications.push({
+        id: `pub-${Date.now()}-${i}-${Math.floor(Math.random() * 1000)}`,
+        pub_index: current.pubIndex,
+        numero_processo: processNumber,
+        plaintiff,
+        defendant,
+        nome_cliente: suggestedClient,
+        prazo_dias: extractedDays,
+        data_limite: calculatedDate,
+        has_detected_days: hasDetectedDays,
+        specific_date: specificDate,
+        observacoes: orderText,
+        texto_original: blockText
+      });
+    }
+  } else {
+    // Fallback: divisão por número CNJ diretamente
+    const cnjRegex = /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/g;
+    const matchesCNJ = [];
+    let matchCNJ;
+    while ((matchCNJ = cnjRegex.exec(text)) !== null) {
+      matchesCNJ.push({
+        number: matchCNJ[0],
+        index: matchCNJ.index
+      });
     }
     
-    if (firstKeywordIndex !== -1) {
-      orderText = blockText.substring(firstKeywordIndex).trim();
-    } else {
-      orderText = blockText.replace(processNumber, '').trim();
+    for (let i = 0; i < matchesCNJ.length; i++) {
+      const current = matchesCNJ[i];
+      const startIndex = current.index;
+      const endIndex = (i + 1 < matchesCNJ.length) ? matchesCNJ[i + 1].index : text.length;
+      const blockText = text.substring(startIndex, endIndex).trim();
+      
+      const processNumber = current.number;
+      
+      const reqtePattern = /(?:REQTE|REQUERENTE|AUTOR|EXEQUENTE|APELANTE|PACIENTE|IMPETRANTE|AGRAVANTE|RECLAMANTE)\s*:\s*([^-\n\.\;]+)/i;
+      const reqdoPattern = /(?:REQDO|REQUERIDO|R[EÉ]U|EXECUTADO|APELADO|IMPETRADO|AGRAVADO|RECLAMADO)\s*:\s*([^-\n\.\;]+)/i;
+      
+      const reqteMatch = blockText.match(reqtePattern);
+      const reqdoMatch = blockText.match(reqdoPattern);
+      
+      const plaintiff = reqteMatch ? reqteMatch[1].trim() : '';
+      const defendant = reqdoMatch ? reqdoMatch[1].trim() : '';
+      
+      let suggestedClient = plaintiff || defendant || '';
+      
+      if (!suggestedClient) {
+        const vsMatch = blockText.match(/(\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s+(?:x|vs\.?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/);
+        if (vsMatch) {
+          suggestedClient = vsMatch[1].trim();
+        }
+      }
+      
+      if (!suggestedClient) {
+        suggestedClient = 'Cliente não identificado';
+      }
+      
+      const resultPrazo = detectarDiasPrazo(blockText);
+      const extractedDays = resultPrazo.days;
+      const hasDetectedDays = resultPrazo.detected;
+      
+      const datePattern = /\b(\d{2})[\/\.](\d{2})[\/\.](\d{4})\b/;
+      const dateMatch = blockText.match(datePattern);
+      let specificDate = null;
+      if (dateMatch) {
+        const day = dateMatch[1];
+        const month = dateMatch[2];
+        const year = dateMatch[3];
+        specificDate = `${year}-${month}-${day}`;
+      }
+      
+      let calculatedDate;
+      if (hasDetectedDays) {
+        calculatedDate = adicionarDiasUteis(new Date(), extractedDays).toISOString().split('T')[0];
+      } else if (specificDate) {
+        const todayIso = new Date().toISOString().split('T')[0];
+        if (specificDate >= todayIso) {
+          calculatedDate = specificDate;
+        } else {
+          calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
+        }
+      } else {
+        calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
+      }
+      
+      let orderText = '';
+      const dispatchKeywords = [/intime[- ]se/i, /manifeste[- ]se/i, /apresente/i, /recolha/i, /fica(?:m)?\s+intimad[ao](?:s)?/i, /cumpra[- ]se/i, /determino/i, /vistos/i, /defiro/i, /indefiro/i];
+      let firstKeywordIndex = -1;
+      
+      for (const kw of dispatchKeywords) {
+        const m = blockText.match(kw);
+        if (m && m.index !== undefined) {
+          if (firstKeywordIndex === -1 || m.index < firstKeywordIndex) {
+            firstKeywordIndex = m.index;
+          }
+        }
+      }
+      
+      if (firstKeywordIndex !== -1) {
+        orderText = blockText.substring(firstKeywordIndex).trim();
+      } else {
+        orderText = blockText.replace(processNumber, '').trim();
+      }
+      
+      orderText = orderText.replace(/\s+/g, ' ');
+      if (orderText.length > 500) {
+        orderText = orderText.substring(0, 500) + '...';
+      }
+      
+      publications.push({
+        id: `pub-${Date.now()}-${i}-${Math.floor(Math.random() * 1000)}`,
+        pub_index: i + 1,
+        numero_processo: processNumber,
+        plaintiff,
+        defendant,
+        nome_cliente: suggestedClient,
+        prazo_dias: extractedDays,
+        data_limite: calculatedDate,
+        has_detected_days: hasDetectedDays,
+        specific_date: specificDate,
+        observacoes: orderText,
+        texto_original: blockText
+      });
     }
-    
-    orderText = orderText.replace(/\s+/g, ' ');
-    if (orderText.length > 500) {
-      orderText = orderText.substring(0, 500) + '...';
-    }
-    
-    publications.push({
-      id: `pub-${Date.now()}-${i}-${Math.floor(Math.random() * 1000)}`,
-      numero_processo: processNumber,
-      plaintiff,
-      defendant,
-      nome_cliente: suggestedClient,
-      prazo_dias: extractedDays,
-      data_limite: calculatedDate,
-      has_detected_days: hasDetectedDays,
-      specific_date: specificDate,
-      observacoes: orderText,
-      texto_original: blockText
-    });
   }
   
   return publications;
@@ -1757,8 +1866,12 @@ const inicializarApp = async () => {
         ? `<span class="pdf-pub-item-badge-status badge-status-imported">Importado</span>`
         : `<span class="pdf-pub-item-badge-status badge-status-pending">Pendente</span>`;
         
+      const pubTitle = pub.pub_index 
+        ? `Publicação ${pub.pub_index}` 
+        : `Publicação ${index + 1}`;
+
       item.innerHTML = `
-        <span class="pdf-pub-item-client">${escapeHTML(pub.nome_cliente)}</span>
+        <span class="pdf-pub-item-client">${escapeHTML(pubTitle)} - ${escapeHTML(pub.nome_cliente)}</span>
         <div class="pdf-pub-item-meta">
           <span>Processo: ${escapeHTML(pub.numero_processo)}</span>
           ${badgeStatusHTML}
@@ -1801,11 +1914,15 @@ const inicializarApp = async () => {
     const btnIcon = isImported ? 'undo-2' : 'plus-circle';
     const btnText = isImported ? 'Desfazer Importação' : 'Importar para Painel';
 
+    const pubTitle = pub.pub_index 
+      ? `Publicação #${pub.pub_index}` 
+      : `Publicação #${index + 1}`;
+
     pdfPublicationDetailsPanel.innerHTML = `
       <div class="pdf-details-content-wrapper animate-fade-in">
         <div class="pdf-details-section-title">
           <span>Detalhes do Prazo & Solicitação</span>
-          <span style="font-size: 11.5px; font-weight: normal; color: var(--text-muted);">${escapeHTML(pub.numero_processo)}</span>
+          <span style="font-size: 11.5px; font-weight: normal; color: var(--text-muted);">${escapeHTML(pubTitle)}</span>
         </div>
         
         <div class="pdf-details-scrollable-form">
@@ -1821,16 +1938,21 @@ const inicializarApp = async () => {
           
           <div class="pub-form-row">
             <div class="form-control-group" style="margin-bottom: 0;">
+              <label style="font-size: 11px;">Número do Processo CNJ *</label>
+              <input type="text" class="pub-process-number-input-detail" value="${escapeHTML(pub.numero_processo === 'CNJ não identificado' ? '' : pub.numero_processo)}" placeholder="0000000-00.0000.0.00.0000" style="padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%;">
+            </div>
+            
+            <div class="form-control-group" style="margin-bottom: 0;">
               <label style="font-size: 11px;">Advogado Responsável *</label>
               <select class="pub-lawyer-select-detail" required style="padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%;">
                 ${lawyerOptionsHTML}
               </select>
             </div>
-            
-            <div class="form-control-group" style="margin-bottom: 0;">
-              <label style="font-size: 11px;">Data Limite do Prazo *</label>
-              <input type="text" class="pub-deadline-input-detail" value="${escapeHTML(formatarDataBR(pub.data_limite))}" required placeholder="DD/MM/AAAA" style="padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%;">
-            </div>
+          </div>
+
+          <div class="form-control-group" style="margin-bottom: 0;">
+            <label style="font-size: 11px;">Data Limite do Prazo *</label>
+            <input type="text" class="pub-deadline-input-detail" value="${escapeHTML(formatarDataBR(pub.data_limite))}" required placeholder="DD/MM/AAAA" style="padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%;">
           </div>
           
           <div class="form-control-group" style="margin-bottom: 0;">
@@ -1858,6 +1980,7 @@ const inicializarApp = async () => {
     
     const selectParty = pdfPublicationDetailsPanel.querySelector('.pub-party-select-detail');
     const inputClientName = pdfPublicationDetailsPanel.querySelector('.pub-client-name-input-detail');
+    const inputProcessNumber = pdfPublicationDetailsPanel.querySelector('.pub-process-number-input-detail');
     const selectLawyer = pdfPublicationDetailsPanel.querySelector('.pub-lawyer-select-detail');
     const inputDeadline = pdfPublicationDetailsPanel.querySelector('.pub-deadline-input-detail');
     const inputDispatch = pdfPublicationDetailsPanel.querySelector('.pub-dispatch-input-detail');
@@ -1867,13 +1990,25 @@ const inicializarApp = async () => {
       inputClientName.value = e.target.value;
       pub.nome_cliente = e.target.value;
       const listItem = document.querySelector(`.pdf-pub-list-item[data-index="${index}"] .pdf-pub-item-client`);
-      if (listItem) listItem.textContent = e.target.value;
+      if (listItem) {
+        const pubTitle = pub.pub_index ? `Publicação ${pub.pub_index}` : `Publicação ${index + 1}`;
+        listItem.textContent = `${pubTitle} - ${e.target.value}`;
+      }
     });
 
     inputClientName.addEventListener('input', (e) => {
       pub.nome_cliente = e.target.value;
       const listItem = document.querySelector(`.pdf-pub-list-item[data-index="${index}"] .pdf-pub-item-client`);
-      if (listItem) listItem.textContent = e.target.value;
+      if (listItem) {
+        const pubTitle = pub.pub_index ? `Publicação ${pub.pub_index}` : `Publicação ${index + 1}`;
+        listItem.textContent = `${pubTitle} - ${e.target.value}`;
+      }
+    });
+
+    inputProcessNumber.addEventListener('input', (e) => {
+      pub.numero_processo = e.target.value.trim();
+      const listItemMeta = document.querySelector(`.pdf-pub-list-item[data-index="${index}"] .pdf-pub-item-meta span`);
+      if (listItemMeta) listItemMeta.textContent = `Processo: ${e.target.value.trim()}`;
     });
 
     selectLawyer.addEventListener('change', (e) => {
@@ -1890,6 +2025,7 @@ const inicializarApp = async () => {
 
     btnImport.addEventListener('click', async () => {
       const clientName = inputClientName.value.trim();
+      const processNum = inputProcessNumber.value.trim();
       
       if (isImported) {
         const processId = pub.importedProcessId;
@@ -1926,6 +2062,19 @@ const inicializarApp = async () => {
         inputClientName.focus();
         return;
       }
+      if (!processNum) {
+        showToast("Número do processo é obrigatório.", "warning");
+        inputProcessNumber.focus();
+        return;
+      }
+      
+      const cnjRegex = /^\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}$/;
+      if (!cnjRegex.test(processNum)) {
+        showToast("Número de processo inválido. Padrão CNJ: NNNNNNN-DD.AAAA.J.TR.OOOO", "warning");
+        inputProcessNumber.focus();
+        return;
+      }
+
       if (!lawyer) {
         showToast("Selecione o advogado responsável.", "warning");
         selectLawyer.focus();
@@ -1955,7 +2104,7 @@ const inicializarApp = async () => {
       try {
         const processoData = {
           nome_cliente: clientName,
-          numero_processo: pub.numero_processo,
+          numero_processo: processNum,
           telefone: '',
           advogado_responsavel: lawyer,
           data_limite: deadlineDateIso,
