@@ -60,6 +60,9 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
 const DATA_HOJE_SISTEMA = new Date();
 DATA_HOJE_SISTEMA.setHours(0, 0, 0, 0);
 
+// Base de cálculo para prazos no formulário
+let editBaseDate = new Date();
+
 // ----------------- AUXILIARES E UTILITÁRIOS -----------------
 
 // Escapar caracteres especiais contra XSS
@@ -224,6 +227,24 @@ function adicionarDiasUteis(dataInicio, dias) {
     }
   }
   return data;
+}
+
+// Calcula o número de dias úteis entre duas datas (exclusivo inicio, inclusivo fim)
+function calcularDiasUteisEntreDatas(inicio, fim) {
+  const dInicio = new Date(inicio + 'T00:00:00');
+  const dFim = new Date(fim + 'T00:00:00');
+  if (isNaN(dInicio.getTime()) || isNaN(dFim.getTime()) || dInicio > dFim) return 0;
+  
+  let dias = 0;
+  let temp = new Date(dInicio);
+  while (temp < dFim) {
+    temp.setDate(temp.getDate() + 1);
+    const ds = temp.getDay();
+    if (ds !== 0 && ds !== 6) { // Ignorar sábado e domingo
+      dias++;
+    }
+  }
+  return dias;
 }
 
 // Converte palavras de números por extenso em português para inteiros
@@ -1075,6 +1096,11 @@ async function abrirModalCadastro(processoId = null) {
 
     if (!p) return;
 
+    editBaseDate = new Date(p.data_cadastro + 'T00:00:00');
+    if (isNaN(editBaseDate.getTime())) {
+      editBaseDate = new Date();
+    }
+
     document.getElementById('process-id-input').value = p.id;
     document.getElementById('proc-nome-cliente').value = p.nome_cliente;
     document.getElementById('proc-numero').value = p.numero_processo;
@@ -1083,11 +1109,35 @@ async function abrirModalCadastro(processoId = null) {
     document.getElementById('proc-data-limite').value = formatarDataBR(p.data_limite);
     document.getElementById('proc-status').value = p.status_processo;
     document.getElementById('proc-observacoes').value = p.observacoes || '';
+
+    // Calcular dias úteis entre data_cadastro e data_limite
+    const calculatedDays = calcularDiasUteisEntreDatas(p.data_cadastro, p.data_limite);
+    const selectPrazoDias = document.getElementById('proc-prazo-dias');
+    if (selectPrazoDias) {
+      if (calculatedDays >= 1 && calculatedDays <= 30) {
+        selectPrazoDias.value = calculatedDays;
+      } else {
+        selectPrazoDias.value = "15"; // Fallback padrão
+      }
+    }
   } else {
     // Modo Criação
     document.getElementById('process-modal-title').textContent = "Novo Processo / Cliente";
     document.getElementById('process-id-input').value = '';
     document.getElementById('proc-status').value = 'Pendente';
+    
+    editBaseDate = new Date();
+    editBaseDate.setHours(0, 0, 0, 0);
+
+    const selectPrazoDias = document.getElementById('proc-prazo-dias');
+    if (selectPrazoDias) {
+      selectPrazoDias.value = "15";
+    }
+
+    // Gerar data automática inicial para 15 dias úteis a partir de hoje
+    const calculatedDate = adicionarDiasUteis(editBaseDate, 15);
+    const dateString = formatarDataBR(calculatedDate.toISOString().split('T')[0]);
+    document.getElementById('proc-data-limite').value = dateString;
   }
 
   document.getElementById('modal-processo').style.display = 'flex';
@@ -1339,6 +1389,24 @@ const inicializarApp = async () => {
     document.getElementById('global-search-input').value = '';
     atualizarTelas();
   });
+
+  // Populador do dropdown de dias úteis no modal de cadastro
+  const selectPrazoDias = document.getElementById('proc-prazo-dias');
+  if (selectPrazoDias) {
+    let optionsHTML = '';
+    for (let d = 1; d <= 30; d++) {
+      const label = d === 1 ? '1 dia útil' : `${d} dias úteis`;
+      optionsHTML += `<option value="${d}">${label}</option>`;
+    }
+    selectPrazoDias.innerHTML = optionsHTML;
+
+    selectPrazoDias.addEventListener('change', () => {
+      const days = parseInt(selectPrazoDias.value, 10);
+      const calculatedDate = adicionarDiasUteis(editBaseDate, days);
+      const dateString = formatarDataBR(calculatedDate.toISOString().split('T')[0]);
+      document.getElementById('proc-data-limite').value = dateString;
+    });
+  }
 
   // 7. Modais de Processo - Cancelar e Fechar
   document.getElementById('btn-open-create-process').addEventListener('click', () => abrirModalCadastro());

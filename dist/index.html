@@ -30,7 +30,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.6.0/dist/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.js"></script>
-  <script type="module" crossorigin src="./assets/index-C4IaPD1_.js"></script>
+  <script type="module" crossorigin src="./assets/index-d01GHsaq.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-VIFAMpiq.css">
 </head>
 <body>
@@ -674,14 +674,20 @@
             </div>
           </div>
           
-          <div class="form-grid-2">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+            <div class="form-control-group">
+              <label for="proc-prazo-dias">Prazo (Dias Úteis) *</label>
+              <select id="proc-prazo-dias" style="width: 100%;">
+                <!-- Opções de 1 a 30 serão geradas por JavaScript -->
+              </select>
+            </div>
             <div class="form-control-group">
               <label for="proc-data-limite">Data Limite do Prazo *</label>
-              <input type="text" id="proc-data-limite" required placeholder="DD/MM/AAAA">
+              <input type="text" id="proc-data-limite" required placeholder="DD/MM/AAAA" style="width: 100%;">
             </div>
             <div class="form-control-group">
               <label for="proc-status">Status do Processo</label>
-              <select id="proc-status">
+              <select id="proc-status" style="width: 100%;">
                 <option value="Pendente" selected>Pendente</option>
                 <option value="Em Andamento">Em Andamento</option>
                 <option value="Prazo Cumprido">Prazo Cumprido</option>
