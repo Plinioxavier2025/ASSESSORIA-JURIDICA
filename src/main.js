@@ -282,11 +282,15 @@ function extrairDataPublicacaoPDF(fullText) {
 }
 
 
-// Calcula a data limite da publicação, tratando prazos regressivos a partir de audiências e datas específicas
+// Calcula a data limite da publicação somando o prazo detectado à data de disponibilização
 function calcularDataLimitePublicacao(blockText, pdfBaseDate, extractedDays, hasDetectedDays) {
-  const pdfBaseDateStr = pdfBaseDate.toISOString().split('T')[0];
+  // Caso regular: somar à data de disponibilização
+  if (hasDetectedDays) {
+    return adicionarDiasUteis(pdfBaseDate, extractedDays).toISOString().split('T')[0];
+  }
 
-  // 1. Procurar por datas no texto que possam ser audiências ou datas específicas limites
+  const pdfBaseDateStr = pdfBaseDate.toISOString().split('T')[0];
+  // 1. Procurar por datas no texto que possam ser datas específicas limites
   const datePatternGlobal = /\b(\d{2})[\/\.](\d{2})[\/\.](\d{4})\b/g;
   let futureDates = [];
   let matchDate;
@@ -298,23 +302,6 @@ function calcularDataLimitePublicacao(blockText, pdfBaseDate, extractedDays, has
     if (foundDate > pdfBaseDateStr) {
       futureDates.push(foundDate);
     }
-  }
-
-  // 2. Se há prazo explícito detectado (ex: "5 dias", "15 dias")
-  if (hasDetectedDays) {
-    const normalizedBlockText = blockText.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const isBackwards = /antes\s+(?:de\s+|da\s+|do\s+)?(?:realizacao\s+)?(?:de\s+|da\s+|do\s+)?(?:audiencia|pericia)/i.test(normalizedBlockText) || 
-                        /antecedencia\s+(?:de\s+|da\s+|do\s+)?(?:audiencia|pericia)/i.test(normalizedBlockText);
-    if (isBackwards && futureDates.length > 0) {
-      // Prazos regressivos: subtrai dias úteis da data do evento futuro (audiência)
-      const targetEventDate = futureDates[0];
-      const dt = new Date(targetEventDate + 'T00:00:00');
-      if (!isNaN(dt.getTime())) {
-        return subtrairDiasUteis(dt, extractedDays).toISOString().split('T')[0];
-      }
-    }
-    // Caso regular: somar à data de disponibilização
-    return adicionarDiasUteis(pdfBaseDate, extractedDays).toISOString().split('T')[0];
   }
 
   // 3. Se não há prazo em dias detectado, mas há uma data limite específica no futuro mencionada
