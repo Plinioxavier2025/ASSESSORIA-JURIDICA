@@ -1406,7 +1406,7 @@ h6 {
   border-radius: 12px;
   overflow-x: auto;
   overflow-y: auto;
-  max-height: calc(100vh - 355px);
+  max-height: calc(100vh - 220px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   width: 100%;
 }

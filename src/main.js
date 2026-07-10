@@ -1155,6 +1155,18 @@ const inicializarApp = async () => {
       document.getElementById('app-screen').style.display = 'none';
       document.getElementById('login-screen').style.display = 'flex';
       document.getElementById('login-form').reset();
+
+      // Resetar abas ativas para que o próximo login inicie do zero no dashboard
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      const defaultNav = document.querySelector('.nav-item[data-target="dashboard"]');
+      if (defaultNav) defaultNav.classList.add('active');
+      document.querySelectorAll('.app-tab-view').forEach(view => view.classList.remove('active'));
+      const defaultView = document.getElementById('tab-dashboard');
+      if (defaultView) defaultView.classList.add('active');
+      document.getElementById('topbar-view-title').textContent = "Painel de Prazos";
+      document.getElementById('global-search-wrapper').style.display = 'block';
+      const alertsBar = document.querySelector('.deadline-alerts-bar');
+      if (alertsBar) alertsBar.style.display = 'grid';
     }
   });
 
@@ -1183,6 +1195,16 @@ const inicializarApp = async () => {
       // Mudar Título do Topbar
       const viewTitle = item.querySelector('span').textContent;
       document.getElementById('topbar-view-title').textContent = viewTitle;
+
+      // Ocultar a barra de métricas (cards de cima) em todas as telas exceto no Dashboard (Kanban)
+      const alertsBar = document.querySelector('.deadline-alerts-bar');
+      if (alertsBar) {
+        if (target === 'dashboard') {
+          alertsBar.style.display = 'grid';
+        } else {
+          alertsBar.style.display = 'none';
+        }
+      }
 
       // Resetar barra de busca global conforme o contexto ou foco
       const globalSearchWrapper = document.getElementById('global-search-wrapper');
