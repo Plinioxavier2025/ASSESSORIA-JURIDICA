@@ -245,13 +245,16 @@ function subtrairDiasUteis(dataFim, dias) {
 
 // Extrai a data de disponibilização/publicação no topo do arquivo PDF
 function extrairDataPublicacaoPDF(fullText) {
-  const textSubset = fullText.substring(0, 2000);
+  const textSubset = fullText.substring(0, 2000)
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .toLowerCase();
+    
   const mesMapa = {
     'janeiro': 0, 'fevereiro': 1, 'marco': 2, 'abril': 3, 'maio': 4, 'junho': 5,
     'julho': 6, 'agosto': 7, 'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11
   };
   
-  const regexExtenso = /disponibilizacao:\s*[a-zA-Z\-–\s,]*(\d{1,2})\s+de\s+([a-zA-Z]+)\s+de\s+(\d{4})/i;
+  const regexExtenso = /disponibilizacao:\s*[a-z\-–\s,]*(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})/i;
   const matchExt = textSubset.match(regexExtenso);
   if (matchExt) {
     const dia = parseInt(matchExt[1], 10);
