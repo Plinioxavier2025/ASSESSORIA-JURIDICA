@@ -226,6 +226,78 @@ function adicionarDiasUteis(dataInicio, dias) {
   return data;
 }
 
+// Converte palavras de números por extenso em português para inteiros
+function extrairDiasDoTexto(snippet) {
+  // 1. Procurar por números em formato digital primeiro
+  const digitoMatch = snippet.match(/\b\d+\b/);
+  if (digitoMatch) {
+    return parseInt(digitoMatch[0], 10);
+  }
+
+  // 2. Procurar por extenso em português
+  const textoLimpo = snippet.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Remove acentos
+
+  const palavrasMapa = {
+    'um': 1, 'uma': 1, 'dois': 2, 'duas': 2, 'tres': 3, 'quatro': 4, 'cinco': 5,
+    'seis': 6, 'sete': 7, 'oito': 8, 'nove': 9, 'dez': 10, 'onze': 11, 'doze': 12,
+    'treze': 13, 'catorze': 14, 'quatorze': 14, 'quinze': 15, 'vinte': 20, 'trinta': 30,
+    'quarenta': 40, 'cinquenta': 50, 'sessenta': 60, 'setenta': 70, 'oitenta': 80,
+    'noventa': 90
+  };
+
+  const palavras = textoLimpo.split(/\s+/);
+  let valorAcumulado = 0;
+  let encontrouAlguma = false;
+
+  for (let i = 0; i < palavras.length; i++) {
+    const p = palavras[i];
+    if (palavrasMapa[p] !== undefined) {
+      encontrouAlguma = true;
+      const val = palavrasMapa[p];
+      // Verifica se é uma dezena e tem unidade depois, ex: "vinte e cinco"
+      if (val >= 20 && palavras[i + 1] === 'e' && palavrasMapa[palavras[i + 2]] !== undefined && palavrasMapa[palavras[i + 2]] < 10) {
+        valorAcumulado += val + palavrasMapa[palavras[i + 2]];
+        i += 2; // pula o 'e' e a unidade
+      } else {
+        valorAcumulado += val;
+      }
+    }
+  }
+
+  if (encontrouAlguma) {
+    return valorAcumulado;
+  }
+
+  return null;
+}
+
+// Analisa o trecho de texto e detecta o prazo em dias
+function detectarDiasPrazo(blockText) {
+  // Regex mais tolerante e abrangente para detectar a expressão de prazo
+  const daysRegex = /(?:prazo(?:\s+legal|\s+supletivo|\s+comum|\s+improrrogavel)?\s+de|em|no\s+prazo\s+de|prazo\s*:\s*)\s+([a-zA-Z\d\s\(\)-]{1,40})\s+dias/i;
+  const match = blockText.match(daysRegex);
+  
+  if (match) {
+    const extracted = extrairDiasDoTexto(match[1]);
+    if (extracted !== null) {
+      return { days: extracted, detected: true };
+    }
+  }
+
+  // Fallback para procurar padrões alternativos de número + dias
+  const fallbackRegex = /\b(\d+|um|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa)\s+dias/i;
+  const fallbackMatch = blockText.match(fallbackRegex);
+  if (fallbackMatch) {
+    const extracted = extrairDiasDoTexto(fallbackMatch[1]);
+    if (extracted !== null) {
+      return { days: extracted, detected: true };
+    }
+  }
+
+  return { days: 15, detected: false }; // Padrão
+}
+
 // Carrega dinamicamente a biblioteca PDF.js
 async function loadPDFJS() {
   if (window.pdfjsLib) return window.pdfjsLib;
@@ -294,26 +366,9 @@ function parsePublications(text) {
       suggestedClient = 'Cliente não identificado';
     }
     
-    const daysPattern = /(?:prazo\s+de\s+|em\s+|no\s+prazo\s+de\s+|prazo\s*:\s*)(\d+)\s*dias/i;
-    const daysMatch = blockText.match(daysPattern);
-    let extractedDays = 15;
-    let hasDetectedDays = false;
-    
-    if (daysMatch) {
-      extractedDays = parseInt(daysMatch[1], 10);
-      hasDetectedDays = true;
-    } else {
-      const textDaysPattern = /prazo\s+de\s+(cinco|dez|quinze|trinta)\s+dias/i;
-      const textDaysMatch = blockText.match(textDaysPattern);
-      if (textDaysMatch) {
-        const textNum = textDaysMatch[1].toLowerCase();
-        hasDetectedDays = true;
-        if (textNum === 'cinco') { extractedDays = 5; }
-        else if (textNum === 'dez') { extractedDays = 10; }
-        else if (textNum === 'quinze') { extractedDays = 15; }
-        else if (textNum === 'trinta') { extractedDays = 30; }
-      }
-    }
+    const resultPrazo = detectarDiasPrazo(blockText);
+    const extractedDays = resultPrazo.days;
+    const hasDetectedDays = resultPrazo.detected;
     
     const datePattern = /\b(\d{2})[\/\.](\d{2})[\/\.](\d{4})\b/;
     const dateMatch = blockText.match(datePattern);
@@ -326,10 +381,23 @@ function parsePublications(text) {
     }
     
     let calculatedDate;
-    if (specificDate) {
-      calculatedDate = specificDate;
-    } else {
+    if (hasDetectedDays) {
+      // Prioridade máxima: se o juiz definiu um prazo em dias (ex: 15 dias, quinze dias),
+      // calcula-se adicionando os dias úteis a partir de hoje
       calculatedDate = adicionarDiasUteis(new Date(), extractedDays).toISOString().split('T')[0];
+    } else if (specificDate) {
+      // Se não detectou prazo em dias, mas encontrou uma data específica (ex: data de audiência)
+      // e essa data é futura, usa essa data diretamente
+      const todayIso = new Date().toISOString().split('T')[0];
+      if (specificDate >= todayIso) {
+        calculatedDate = specificDate;
+      } else {
+        // Se a data específica é no passado (como data de sentença/despacho), usa o prazo padrão
+        calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
+      }
+    } else {
+      // Fallback padrão se nada for detectado
+      calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
     }
     
     let orderText = '';
