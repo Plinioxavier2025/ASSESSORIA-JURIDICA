@@ -398,29 +398,7 @@ function parsePublications(text) {
         calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
       }
       
-      let orderText = '';
-      const dispatchKeywords = [/intime[- ]se/i, /manifeste[- ]se/i, /apresente/i, /recolha/i, /fica(?:m)?\s+intimad[ao](?:s)?/i, /cumpra[- ]se/i, /determino/i, /vistos/i, /defiro/i, /indefiro/i];
-      let firstKeywordIndex = -1;
-      
-      for (const kw of dispatchKeywords) {
-        const m = blockText.match(kw);
-        if (m && m.index !== undefined) {
-          if (firstKeywordIndex === -1 || m.index < firstKeywordIndex) {
-            firstKeywordIndex = m.index;
-          }
-        }
-      }
-      
-      if (firstKeywordIndex !== -1) {
-        orderText = blockText.substring(firstKeywordIndex).trim();
-      } else {
-        orderText = blockText.replace(processNumber, '').trim();
-      }
-      
-      orderText = orderText.replace(/\s+/g, ' ');
-      if (orderText.length > 500) {
-        orderText = orderText.substring(0, 500) + '...';
-      }
+      let orderText = blockText.trim();
       
       publications.push({
         id: `pub-${Date.now()}-${i}-${Math.floor(Math.random() * 1000)}`,
@@ -507,29 +485,7 @@ function parsePublications(text) {
         calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
       }
       
-      let orderText = '';
-      const dispatchKeywords = [/intime[- ]se/i, /manifeste[- ]se/i, /apresente/i, /recolha/i, /fica(?:m)?\s+intimad[ao](?:s)?/i, /cumpra[- ]se/i, /determino/i, /vistos/i, /defiro/i, /indefiro/i];
-      let firstKeywordIndex = -1;
-      
-      for (const kw of dispatchKeywords) {
-        const m = blockText.match(kw);
-        if (m && m.index !== undefined) {
-          if (firstKeywordIndex === -1 || m.index < firstKeywordIndex) {
-            firstKeywordIndex = m.index;
-          }
-        }
-      }
-      
-      if (firstKeywordIndex !== -1) {
-        orderText = blockText.substring(firstKeywordIndex).trim();
-      } else {
-        orderText = blockText.replace(processNumber, '').trim();
-      }
-      
-      orderText = orderText.replace(/\s+/g, ' ');
-      if (orderText.length > 500) {
-        orderText = orderText.substring(0, 500) + '...';
-      }
+      let orderText = blockText.trim();
       
       publications.push({
         id: `pub-${Date.now()}-${i}-${Math.floor(Math.random() * 1000)}`,
