@@ -274,8 +274,8 @@ function extrairDiasDoTexto(snippet) {
 
 // Analisa o trecho de texto e detecta o prazo em dias
 function detectarDiasPrazo(blockText) {
-  // Regex mais tolerante e abrangente para detectar a expressão de prazo
-  const daysRegex = /(?:prazo(?:\s+legal|\s+supletivo|\s+comum|\s+improrrogavel)?\s+de|em|no\s+prazo\s+de|prazo\s*:\s*)\s+([a-zA-Z\d\s\(\)-]{1,40})\s+dias/i;
+  // Regex super flexível que tolera adjetivos judiciais e a palavra "até" entre "prazo" e "dias"
+  const daysRegex = /(?:prazo\s+(?:[a-zA-Z]{1,20}\s+){0,3}de|em|no\s+prazo\s+de|prazo\s*:\s*)\s*(?:ate\s+)?([a-zA-Z\d\s\(\)-]{1,45})\s+dias/i;
   const match = blockText.match(daysRegex);
   
   if (match) {
