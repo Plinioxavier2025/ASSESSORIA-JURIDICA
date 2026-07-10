@@ -30,6 +30,16 @@ function formatarData(dataStr) {
   return dataStr;
 }
 
+// Retorna o nome de exibição (label) correspondente a chave do banco de dados para os relatórios
+function obterLabelAdvogado(dbKey) {
+  if (dbKey === 'Dra. Regina') return localStorage.getItem('as_advogado_nome_1') || 'Dra. Regina';
+  if (dbKey === 'Dr. Eloi') return localStorage.getItem('as_advogado_nome_2') || 'Dr. Eloi';
+  if (dbKey === 'Dr. Walisson') return localStorage.getItem('as_advogado_nome_3') || 'Dr. Walisson';
+  if (dbKey === 'Dra. Andreia') return localStorage.getItem('as_advogado_nome_4') || 'Dra. Andreia';
+  if (dbKey === 'Dra. Iza') return localStorage.getItem('as_advogado_nome_5') || 'Dra. Iza';
+  return dbKey;
+}
+
 // Filtra a lista de processos com base nos filtros da UI
 export async function obterDadosFiltradosRelatorio(filtros) {
   const processos = await getProcessos();
@@ -104,7 +114,7 @@ export async function exportarExcelRelatorio(filtros) {
       'Nome do Cliente': p.nome_cliente,
       'Número do Processo': p.numero_processo,
       'Telefone de Contato': p.telefone || '-',
-      'Advogado Responsável': p.advogado_responsavel,
+      'Advogado Responsável': obterLabelAdvogado(p.advogado_responsavel),
       'Data de Cadastro': formatarData(p.data_cadastro),
       'Data Limite do Prazo': formatarData(p.data_limite),
       'Prazo Restante': diasDesc,
@@ -191,7 +201,7 @@ export async function exportarPDFRelatorio(filtros) {
       p.nome_cliente,
       p.numero_processo,
       p.telefone || '-',
-      p.advogado_responsavel,
+      obterLabelAdvogado(p.advogado_responsavel),
       formatarData(p.data_cadastro),
       formatarData(p.data_limite),
       diasDesc,

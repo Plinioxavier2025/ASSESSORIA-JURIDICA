@@ -166,6 +166,214 @@ function obterTextoPrazo(diasRestantes, concluido) {
   return `Faltam ${diasRestantes} dias`;
 }
 
+// Retorna a lista de advogados configurados no sistema com seus mapeamentos
+function obterListaAdvogados() {
+  return [
+    { dbKey: 'Dra. Regina', label: localStorage.getItem('as_advogado_nome_1') || 'Dra. Regina', avatar: 'DR', class: 'init-regina', colId: 'cards-regina', countId: 'count-regina' },
+    { dbKey: 'Dr. Eloi', label: localStorage.getItem('as_advogado_nome_2') || 'Dr. Eloi', avatar: 'DE', class: 'init-eloi', colId: 'cards-eloi', countId: 'count-eloi' },
+    { dbKey: 'Dr. Walisson', label: localStorage.getItem('as_advogado_nome_3') || 'Dr. Walisson', avatar: 'WA', class: 'init-walisson', colId: 'cards-walisson', countId: 'count-walisson' },
+    { dbKey: 'Dra. Andreia', label: localStorage.getItem('as_advogado_nome_4') || 'Dra. Andreia', avatar: 'AN', class: 'init-andreia', colId: 'cards-andreia', countId: 'count-andreia' },
+    { dbKey: 'Dra. Iza', label: localStorage.getItem('as_advogado_nome_5') || 'Dra. Iza', avatar: 'IZ', class: 'init-iza', colId: 'cards-iza', countId: 'count-iza' }
+  ];
+}
+
+// Retorna o nome de exibição (label) correspondente a chave do banco de dados
+function obterLabelAdvogado(dbKey) {
+  const list = obterListaAdvogados();
+  const match = list.find(a => a.dbKey === dbKey);
+  return match ? match.label : dbKey;
+}
+
+// Popula dinamicamente os elementos de select do sistema com os nomes dos advogados
+function popularSelectsAdvogados() {
+  const advogadosList = obterListaAdvogados();
+  
+  // 1. Tabela Filtros (Filtro por Advogado)
+  const filterLawyerSelect = document.getElementById('filter-lawyer');
+  if (filterLawyerSelect) {
+    const currentValue = filterLawyerSelect.value;
+    filterLawyerSelect.innerHTML = '<option value="Todos">Todos os Advogados</option>';
+    advogadosList.forEach(adv => {
+      filterLawyerSelect.innerHTML += `<option value="${escapeHTML(adv.dbKey)}">${escapeHTML(adv.label)}</option>`;
+    });
+    filterLawyerSelect.value = currentValue || 'Todos';
+  }
+  
+  // 2. Formulário de Processo (Selecione o Advogado)
+  const procAdvogadoSelect = document.getElementById('proc-advogado');
+  if (procAdvogadoSelect) {
+    const currentValue = procAdvogadoSelect.value;
+    procAdvogadoSelect.innerHTML = '<option value="" disabled selected>Selecione o Advogado</option>';
+    advogadosList.forEach(adv => {
+      procAdvogadoSelect.innerHTML += `<option value="${escapeHTML(adv.dbKey)}">${escapeHTML(adv.label)}</option>`;
+    });
+    if (currentValue) procAdvogadoSelect.value = currentValue;
+  }
+}
+
+
+// Adiciona dias úteis a uma data inicial
+function adicionarDiasUteis(dataInicio, dias) {
+  let data = new Date(dataInicio);
+  let c = 0;
+  while (c < dias) {
+    data.setDate(data.getDate() + 1);
+    const diaSemana = data.getDay();
+    if (diaSemana !== 0 && diaSemana !== 6) { // 0 = Domingo, 6 = Sábado
+      c++;
+    }
+  }
+  return data;
+}
+
+// Carrega dinamicamente a biblioteca PDF.js
+async function loadPDFJS() {
+  if (window.pdfjsLib) return window.pdfjsLib;
+  
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve(window.pdfjsLib);
+    };
+    script.onerror = () => {
+      reject(new Error("Erro ao carregar a biblioteca PDF.js. Verifique sua conexão com a internet."));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+// Analisa o texto do PDF e extrai publicações estruturadas
+function parsePublications(text) {
+  const cnjRegex = /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/g;
+  
+  const matches = [];
+  let match;
+  while ((match = cnjRegex.exec(text)) !== null) {
+    matches.push({
+      number: match[0],
+      index: match.index
+    });
+  }
+  
+  if (matches.length === 0) {
+    return [];
+  }
+  
+  const publications = [];
+  
+  for (let i = 0; i < matches.length; i++) {
+    const current = matches[i];
+    const startIndex = current.index;
+    const endIndex = (i + 1 < matches.length) ? matches[i + 1].index : text.length;
+    const blockText = text.substring(startIndex, endIndex).trim();
+    
+    const processNumber = current.number;
+    
+    // Padrões de Autor/Réu comuns em diários de justiça brasileiros
+    const reqtePattern = /(?:REQTE|REQUERENTE|AUTOR|EXEQUENTE|APELANTE|PACIENTE|IMPETRANTE|AGRAVANTE|RECLAMANTE)\s*:\s*([^-\n\.\;]+)/i;
+    const reqdoPattern = /(?:REQDO|REQUERIDO|R[EÉ]U|EXECUTADO|APELADO|IMPETRADO|AGRAVADO|RECLAMADO)\s*:\s*([^-\n\.\;]+)/i;
+    
+    const reqteMatch = blockText.match(reqtePattern);
+    const reqdoMatch = blockText.match(reqdoPattern);
+    
+    const plaintiff = reqteMatch ? reqteMatch[1].trim() : '';
+    const defendant = reqdoMatch ? reqdoMatch[1].trim() : '';
+    
+    let suggestedClient = plaintiff || defendant || '';
+    
+    if (!suggestedClient) {
+      const vsMatch = blockText.match(/(\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s+(?:x|vs\.?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/);
+      if (vsMatch) {
+        suggestedClient = vsMatch[1].trim();
+      }
+    }
+    
+    if (!suggestedClient) {
+      suggestedClient = 'Cliente não identificado';
+    }
+    
+    const daysPattern = /(?:prazo\s+de\s+|em\s+|no\s+prazo\s+de\s+|prazo\s*:\s*)(\d+)\s*dias/i;
+    const daysMatch = blockText.match(daysPattern);
+    let extractedDays = 15;
+    let hasDetectedDays = false;
+    
+    if (daysMatch) {
+      extractedDays = parseInt(daysMatch[1], 10);
+      hasDetectedDays = true;
+    } else {
+      const textDaysPattern = /prazo\s+de\s+(cinco|dez|quinze|trinta)\s+dias/i;
+      const textDaysMatch = blockText.match(textDaysPattern);
+      if (textDaysMatch) {
+        const textNum = textDaysMatch[1].toLowerCase();
+        hasDetectedDays = true;
+        if (textNum === 'cinco') { extractedDays = 5; }
+        else if (textNum === 'dez') { extractedDays = 10; }
+        else if (textNum === 'quinze') { extractedDays = 15; }
+        else if (textNum === 'trinta') { extractedDays = 30; }
+      }
+    }
+    
+    const datePattern = /\b(\d{2})[\/\.](\d{2})[\/\.](\d{4})\b/;
+    const dateMatch = blockText.match(datePattern);
+    let specificDate = null;
+    if (dateMatch) {
+      const day = dateMatch[1];
+      const month = dateMatch[2];
+      const year = dateMatch[3];
+      specificDate = `${year}-${month}-${day}`;
+    }
+    
+    let calculatedDate;
+    if (specificDate) {
+      calculatedDate = specificDate;
+    } else {
+      calculatedDate = adicionarDiasUteis(new Date(), extractedDays).toISOString().split('T')[0];
+    }
+    
+    let orderText = '';
+    const dispatchKeywords = [/intime[- ]se/i, /manifeste[- ]se/i, /apresente/i, /recolha/i, /fica(?:m)?\s+intimad[ao](?:s)?/i, /cumpra[- ]se/i, /determino/i, /vistos/i, /defiro/i, /indefiro/i];
+    let firstKeywordIndex = -1;
+    
+    for (const kw of dispatchKeywords) {
+      const m = blockText.match(kw);
+      if (m && m.index !== undefined) {
+        if (firstKeywordIndex === -1 || m.index < firstKeywordIndex) {
+          firstKeywordIndex = m.index;
+        }
+      }
+    }
+    
+    if (firstKeywordIndex !== -1) {
+      orderText = blockText.substring(firstKeywordIndex).trim();
+    } else {
+      orderText = blockText.replace(processNumber, '').trim();
+    }
+    
+    orderText = orderText.replace(/\s+/g, ' ');
+    if (orderText.length > 500) {
+      orderText = orderText.substring(0, 500) + '...';
+    }
+    
+    publications.push({
+      id: `pub-${Date.now()}-${i}-${Math.floor(Math.random() * 1000)}`,
+      numero_processo: processNumber,
+      plaintiff,
+      defendant,
+      nome_cliente: suggestedClient,
+      prazo_dias: extractedDays,
+      data_limite: calculatedDate,
+      has_detected_days: hasDetectedDays,
+      specific_date: specificDate,
+      observacoes: orderText,
+      texto_original: blockText
+    });
+  }
+  
+  return publications;
+}
+
 // ----------------- RENDERIZAÇÃO DA SPA -----------------
 
 // Inicialização e atualização de dados da tela
@@ -189,18 +397,30 @@ export async function atualizarTelas() {
   // 1. Obter Processos
   const processos = await getProcessos();
 
-  // Limpar colunas kanban
-  const colRegina = document.getElementById('cards-regina');
-  const colEloi = document.getElementById('cards-eloi');
-  const colWalisson = document.getElementById('cards-walisson');
-  const colAndreia = document.getElementById('cards-andreia');
-  const colIza = document.getElementById('cards-iza');
+  const advogadosList = obterListaAdvogados();
 
-  colRegina.innerHTML = '';
-  colEloi.innerHTML = '';
-  colWalisson.innerHTML = '';
-  colAndreia.innerHTML = '';
-  colIza.innerHTML = '';
+  // Limpar colunas kanban e atualizar títulos das colunas
+  advogadosList.forEach(adv => {
+    const col = document.getElementById(adv.colId);
+    if (col) col.innerHTML = '';
+    
+    // Atualiza o título da coluna
+    const colEl = document.querySelector(`.kanban-column[data-lawyer="${adv.dbKey}"]`);
+    if (colEl) {
+      const titleEl = colEl.querySelector('.lawyer-meta h3');
+      if (titleEl) titleEl.textContent = adv.label;
+      
+      const avatarEl = colEl.querySelector('.lawyer-avatar');
+      if (avatarEl) {
+        const parts = adv.label.split(' ');
+        const init = parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0][0] + (parts[0][1] || '');
+        avatarEl.textContent = init.toUpperCase();
+      }
+    }
+  });
+
+  // Popular selects de filtros e formulários
+  popularSelectsAdvogados();
 
   // Contadores dinâmicos de alertas
   let countExpired = 0;
@@ -210,11 +430,10 @@ export async function atualizarTelas() {
   let countBlue = 0;
 
   // Contadores por Advogado
-  let countReginaLawyer = 0;
-  let countEloiLawyer = 0;
-  let countWalissonLawyer = 0;
-  let countAndreiaLawyer = 0;
-  let countIzaLawyer = 0;
+  const contadoresAdvogado = {};
+  advogadosList.forEach(adv => {
+    contadoresAdvogado[adv.dbKey] = 0;
+  });
 
   processos.forEach(p => {
     const dias = calcularDiasRestantes(p.data_limite);
@@ -291,33 +510,26 @@ export async function atualizarTelas() {
     }
 
     // Injeta na coluna correspondente
-    if (p.advogado_responsavel === 'Dra. Regina') { colRegina.appendChild(card); countReginaLawyer++; }
-    else if (p.advogado_responsavel === 'Dr. Eloi') { colEloi.appendChild(card); countEloiLawyer++; }
-    else if (p.advogado_responsavel === 'Dr. Walisson') { colWalisson.appendChild(card); countWalissonLawyer++; }
-    else if (p.advogado_responsavel === 'Dra. Andreia') { colAndreia.appendChild(card); countAndreiaLawyer++; }
-    else if (p.advogado_responsavel === 'Dra. Iza') { colIza.appendChild(card); countIzaLawyer++; }
-  });
-
-  // Exibir placeholder se coluna estiver vazia
-  const colunas = [
-    { el: colRegina, count: countReginaLawyer },
-    { el: colEloi, count: countEloiLawyer },
-    { el: colWalisson, count: countWalissonLawyer },
-    { el: colAndreia, count: countAndreiaLawyer },
-    { el: colIza, count: countIzaLawyer }
-  ];
-  colunas.forEach(c => {
-    if (c.count === 0) {
-      c.el.innerHTML = `<div class="card-placeholder-empty">Nenhum prazo sob responsabilidade</div>`;
+    const adv = advogadosList.find(a => a.dbKey === p.advogado_responsavel);
+    if (adv) {
+      const col = document.getElementById(adv.colId);
+      if (col) {
+        col.appendChild(card);
+        contadoresAdvogado[adv.dbKey]++;
+      }
     }
   });
 
-  // Atualizar indicadores de badges nas colunas
-  document.getElementById('count-regina').textContent = countReginaLawyer;
-  document.getElementById('count-eloi').textContent = countEloiLawyer;
-  document.getElementById('count-walisson').textContent = countWalissonLawyer;
-  document.getElementById('count-andreia').textContent = countAndreiaLawyer;
-  document.getElementById('count-iza').textContent = countIzaLawyer;
+  // Exibir placeholder se coluna estiver vazia e atualizar contadores
+  advogadosList.forEach(adv => {
+    const col = document.getElementById(adv.colId);
+    const count = contadoresAdvogado[adv.dbKey];
+    if (col && count === 0) {
+      col.innerHTML = `<div class="card-placeholder-empty">Nenhum prazo sob responsabilidade</div>`;
+    }
+    const countEl = document.getElementById(adv.countId);
+    if (countEl) countEl.textContent = count;
+  });
 
   // Atualizar contadores do topo da tela
   document.getElementById('metric-expired').textContent = countExpired;
@@ -409,7 +621,7 @@ function renderizarTabelaProcessos(processos) {
       </td>
       <td>${escapeHTML(p.numero_processo)}</td>
       <td>${escapeHTML(p.telefone || '-')}</td>
-      <td>${escapeHTML(p.advogado_responsavel)}</td>
+      <td>${escapeHTML(obterLabelAdvogado(p.advogado_responsavel))}</td>
       <td>${escapeHTML(formatarDataBR(p.data_cadastro))}</td>
       <td>${escapeHTML(formatarDataBR(p.data_limite))}</td>
       <td style="font-weight: 600;">${escapeHTML(obterTextoPrazo(dias, concluido))}</td>
@@ -502,7 +714,7 @@ function renderizarTabelaPrazosCumpridos(processos) {
         </div>
       </td>
       <td>${escapeHTML(p.numero_processo)}</td>
-      <td>${escapeHTML(p.advogado_responsavel)}</td>
+      <td>${escapeHTML(obterLabelAdvogado(p.advogado_responsavel))}</td>
       <td>${escapeHTML(formatarDataBR(p.data_cadastro))}</td>
       <td>${escapeHTML(formatarDataBR(p.data_limite))}</td>
       <td>${escapeHTML(p.concluido_em ? new Date(p.concluido_em).toLocaleString('pt-BR') : '-')}</td>
@@ -601,6 +813,18 @@ function renderizarConfiguracoes() {
     backupEl.textContent = lastBackup;
   }
 
+  // Preencher nomes dos advogados
+  const adv1 = document.getElementById('adv-nome-1');
+  if (adv1) adv1.value = localStorage.getItem('as_advogado_nome_1') || 'Dra. Regina';
+  const adv2 = document.getElementById('adv-nome-2');
+  if (adv2) adv2.value = localStorage.getItem('as_advogado_nome_2') || 'Dr. Eloi';
+  const adv3 = document.getElementById('adv-nome-3');
+  if (adv3) adv3.value = localStorage.getItem('as_advogado_nome_3') || 'Dr. Walisson';
+  const adv4 = document.getElementById('adv-nome-4');
+  if (adv4) adv4.value = localStorage.getItem('as_advogado_nome_4') || 'Dra. Andreia';
+  const adv5 = document.getElementById('adv-nome-5');
+  if (adv5) adv5.value = localStorage.getItem('as_advogado_nome_5') || 'Dra. Iza';
+
   // Ocultar card de backup para operadores
   const currentUser = getCurrentUser();
   const backupCard = document.getElementById('settings-card-backup');
@@ -628,7 +852,7 @@ async function abrirModalDetalhes(processoId) {
   document.getElementById('details-client-name').textContent = `Pasta Digital: ${p.nome_cliente}`;
   document.getElementById('details-process-number').textContent = p.numero_processo;
   document.getElementById('details-phone').textContent = p.telefone || 'Não informado';
-  document.getElementById('details-lawyer').textContent = p.advogado_responsavel;
+  document.getElementById('details-lawyer').textContent = obterLabelAdvogado(p.advogado_responsavel);
 
   const statusBadge = document.getElementById('details-status-badge');
   statusBadge.className = `status-badge badge-${p.status_processo.toLowerCase().replace(' ', '-')}`;
@@ -1042,12 +1266,23 @@ const inicializarApp = async () => {
     }
   });
 
-  // 9. Pasta Digital - Fechar
+  // 9. Pasta Digital - Fechar e Editar
   document.querySelectorAll('#btn-close-details-modal, #btn-close-details-modal-footer').forEach(btn => {
     btn.addEventListener('click', () => {
       document.getElementById('modal-detalhes-processo').style.display = 'none';
     });
   });
+
+  const btnEditFromDetails = document.getElementById('btn-edit-from-details');
+  if (btnEditFromDetails) {
+    btnEditFromDetails.addEventListener('click', () => {
+      const procId = document.getElementById('form-add-timeline-note').getAttribute('data-processo-id');
+      if (procId) {
+        document.getElementById('modal-detalhes-processo').style.display = 'none';
+        abrirModalCadastro(procId);
+      }
+    });
+  }
 
   // 10. Registrar Nota na Linha do Tempo Manual
   const formAddNote = document.getElementById('form-add-timeline-note');
@@ -1280,6 +1515,340 @@ const inicializarApp = async () => {
       } finally {
         setButtonLoading(submitBtn, false);
       }
+    });
+  }
+
+  // 17. Importação de PDF AASP
+  const btnOpenImportPdf = document.getElementById('btn-open-import-pdf');
+  const modalImportPdf = document.getElementById('modal-import-pdf');
+  const btnCloseImportPdfModal = document.getElementById('btn-close-import-pdf-modal');
+  const btnCloseImportPdfFooter = document.getElementById('btn-close-import-pdf-footer');
+  const pdfDropzone = document.getElementById('pdf-dropzone');
+  const inputPdfFile = document.getElementById('input-pdf-file');
+  const pdfLoadingStatus = document.getElementById('pdf-loading-status');
+  const pdfLoadingMessage = document.getElementById('pdf-loading-message');
+  const pdfImportResultsContainer = document.getElementById('pdf-import-results-container');
+  const pdfPublicationsList = document.getElementById('pdf-publications-list');
+  const pdfResultsCount = document.getElementById('pdf-results-count');
+
+  if (btnOpenImportPdf) {
+    btnOpenImportPdf.addEventListener('click', () => {
+      pdfDropzone.style.display = 'flex';
+      pdfLoadingStatus.style.display = 'none';
+      pdfImportResultsContainer.style.display = 'none';
+      pdfPublicationsList.innerHTML = '';
+      if (inputPdfFile) inputPdfFile.value = '';
+      
+      modalImportPdf.style.display = 'flex';
+      window.lucide.createIcons();
+    });
+  }
+
+  const fecharModalImportPdf = () => {
+    modalImportPdf.style.display = 'none';
+  };
+
+  if (btnCloseImportPdfModal) btnCloseImportPdfModal.addEventListener('click', fecharModalImportPdf);
+  if (btnCloseImportPdfFooter) btnCloseImportPdfFooter.addEventListener('click', fecharModalImportPdf);
+
+  // Eventos de Drag & Drop
+  if (pdfDropzone) {
+    pdfDropzone.addEventListener('click', () => {
+      inputPdfFile.click();
+    });
+
+    pdfDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      pdfDropzone.classList.add('dragover');
+    });
+
+    pdfDropzone.addEventListener('dragleave', () => {
+      pdfDropzone.classList.remove('dragover');
+    });
+
+    pdfDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      pdfDropzone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0 && files[0].type === 'application/pdf') {
+        processarArquivoPDF(files[0]);
+      } else {
+        showToast("Por favor, selecione um arquivo PDF válido.", "warning");
+      }
+    });
+  }
+
+  if (inputPdfFile) {
+    inputPdfFile.addEventListener('change', (e) => {
+      const files = e.target.files;
+      if (files.length > 0) {
+        processarArquivoPDF(files[0]);
+      }
+    });
+  }
+
+  // Função para processar o PDF
+  async function processarArquivoPDF(file) {
+    pdfDropzone.style.display = 'none';
+    pdfLoadingStatus.style.display = 'block';
+    pdfLoadingMessage.textContent = 'Carregando leitor de PDF...';
+    
+    try {
+      const pdfjs = await loadPDFJS();
+      pdfLoadingMessage.textContent = 'Lendo e extraindo textos do PDF...';
+      
+      const fileReader = new FileReader();
+      fileReader.onload = async function() {
+        try {
+          const typedarray = new Uint8Array(this.result);
+          const loadingTask = pdfjs.getDocument({ data: typedarray });
+          const pdf = await loadingTask.promise;
+          
+          let fullText = '';
+          const numPages = pdf.numPages;
+          
+          for (let i = 1; i <= numPages; i++) {
+            pdfLoadingMessage.textContent = `Extraindo textos: página ${i} de ${numPages}...`;
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += pageText + '\n';
+          }
+          
+          pdfLoadingMessage.textContent = 'Analisando textos judiciais...';
+          const publications = parsePublications(fullText);
+          
+          pdfLoadingStatus.style.display = 'none';
+          
+          if (publications.length === 0) {
+            showToast("Nenhuma publicação com formato de processo CNJ foi encontrada no PDF.", "warning");
+            pdfDropzone.style.display = 'flex';
+            return;
+          }
+          
+          renderizarPublicacoesImportadas(publications);
+        } catch (err) {
+          showToast("Erro ao ler o PDF: " + err.message, "error");
+          pdfLoadingStatus.style.display = 'none';
+          pdfDropzone.style.display = 'flex';
+        }
+      };
+      
+      fileReader.readAsArrayBuffer(file);
+    } catch (err) {
+      showToast(err.message, "error");
+      pdfLoadingStatus.style.display = 'none';
+      pdfDropzone.style.display = 'flex';
+    }
+  }
+
+  // Função para renderizar as publicações no modal
+  function renderizarPublicacoesImportadas(publications) {
+    pdfPublicationsList.innerHTML = '';
+    pdfResultsCount.textContent = publications.length;
+    pdfImportResultsContainer.style.display = 'block';
+    
+    publications.forEach((pub, index) => {
+      const card = document.createElement('div');
+      card.className = 'publication-card animate-fade-in';
+      card.id = `pub-card-${pub.id}`;
+      
+      let lawyerOptionsHTML = '<option value="" disabled selected>Selecione o Advogado</option>';
+      obterListaAdvogados().forEach(adv => {
+        lawyerOptionsHTML += `<option value="${escapeHTML(adv.dbKey)}">${escapeHTML(adv.label)}</option>`;
+      });
+
+      let partiesOptionsHTML = '';
+      if (pub.plaintiff) {
+        partiesOptionsHTML += `<option value="${escapeHTML(pub.plaintiff)}">Autor: ${escapeHTML(pub.plaintiff)}</option>`;
+      }
+      if (pub.defendant) {
+        partiesOptionsHTML += `<option value="${escapeHTML(pub.defendant)}">Réu: ${escapeHTML(pub.defendant)}</option>`;
+      }
+      partiesOptionsHTML += `<option value="${escapeHTML(pub.nome_cliente)}" selected>Sugerido: ${escapeHTML(pub.nome_cliente)}</option>`;
+
+      card.innerHTML = `
+        <div class="publication-card-header">
+          <span class="pub-proc-num">${escapeHTML(pub.numero_processo)}</span>
+          <span class="pub-detected-badge">${escapeHTML(pub.has_detected_days ? `Prazo: ${pub.prazo_dias} dias` : pub.specific_date ? 'Data detectada' : 'Prazo padrão')}</span>
+        </div>
+        
+        <div class="publication-card-body">
+          <div class="pub-form-inputs">
+            <div class="form-control-group" style="margin-bottom: 8px;">
+              <label style="font-size: 11px;">Nome do Cliente (Selecione ou edite se necessário)</label>
+              <div style="display: flex; gap: 8px;">
+                <select class="pub-party-select" style="flex: 1; padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px;">
+                  ${partiesOptionsHTML}
+                </select>
+                <input type="text" class="pub-client-name-input" value="${escapeHTML(pub.nome_cliente)}" style="flex: 1.2; padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px;" placeholder="Nome do Cliente">
+              </div>
+            </div>
+            
+            <div class="pub-form-row">
+              <div class="form-control-group" style="margin-bottom: 0;">
+                <label style="font-size: 11px;">Advogado Responsável *</label>
+                <select class="pub-lawyer-select" required style="padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%;">
+                  ${lawyerOptionsHTML}
+                </select>
+              </div>
+              
+              <div class="form-control-group" style="margin-bottom: 0;">
+                <label style="font-size: 11px;">Data Limite do Prazo *</label>
+                <input type="date" class="pub-deadline-input" value="${escapeHTML(pub.data_limite)}" required style="padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%;">
+              </div>
+            </div>
+            
+            <div class="form-control-group" style="margin-bottom: 0;">
+              <label style="font-size: 11px;">O que o Juiz está pedindo (Despacho)</label>
+              <textarea class="pub-dispatch-input" rows="2" style="padding: 8px; font-size: 12.5px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%; resize: vertical;">${escapeHTML(pub.observacoes)}</textarea>
+            </div>
+          </div>
+          
+          <div class="pub-original-text-wrapper">
+            <span class="pub-original-text-title">
+              <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
+              Trecho da Publicação AASP
+            </span>
+            <div class="pub-original-text-content">${escapeHTML(pub.texto_original)}</div>
+          </div>
+        </div>
+        
+        <div class="publication-card-footer">
+          <button type="button" class="btn-action-primary btn-import-pub" data-index="${index}">
+            <i data-lucide="plus-circle"></i>
+            <span>Importar para Painel</span>
+          </button>
+        </div>
+      `;
+      
+      pdfPublicationsList.appendChild(card);
+      
+      const selectParty = card.querySelector('.pub-party-select');
+      const inputClientName = card.querySelector('.pub-client-name-input');
+      selectParty.addEventListener('change', (e) => {
+        inputClientName.value = e.target.value;
+      });
+      
+      const btnImport = card.querySelector('.btn-import-pub');
+      btnImport.addEventListener('click', async () => {
+        const clientName = inputClientName.value.trim();
+        
+        // Se já foi importado, o clique desfaz a importação
+        if (card.classList.contains('imported')) {
+          const processId = card.getAttribute('data-imported-process-id');
+          if (!processId) return;
+          
+          setButtonLoading(btnImport, true, "Desfazendo...");
+          
+          try {
+            await deleteProcesso(processId, getCurrentUser());
+            
+            showToast(`Importação do cliente "${clientName}" desfeita com sucesso!`, 'success');
+            
+            card.classList.remove('imported');
+            card.removeAttribute('data-imported-process-id');
+            
+            btnImport.className = 'btn-action-primary btn-import-pub';
+            btnImport.innerHTML = `
+              <i data-lucide="plus-circle"></i>
+              <span>Importar para Painel</span>
+            `;
+            
+            atualizarTelas();
+          } catch (err) {
+            showToast("Erro ao desfazer importação: " + err.message, "error");
+          } finally {
+            setButtonLoading(btnImport, false);
+            window.lucide.createIcons();
+          }
+          return;
+        }
+
+        const selectLawyer = card.querySelector('.pub-lawyer-select');
+        const lawyer = selectLawyer.value;
+        const deadlineDate = card.querySelector('.pub-deadline-input').value;
+        const dispatchText = card.querySelector('.pub-dispatch-input').value.trim();
+        
+        if (!clientName) {
+          showToast("Nome do cliente é obrigatório.", "warning");
+          return;
+        }
+        if (!lawyer) {
+          showToast("Selecione o advogado responsável.", "warning");
+          selectLawyer.focus();
+          return;
+        }
+        if (!deadlineDate) {
+          showToast("A data limite é obrigatória.", "warning");
+          return;
+        }
+        
+        setButtonLoading(btnImport, true, "Cadastrando...");
+        
+        try {
+          const processoData = {
+            nome_cliente: clientName,
+            numero_processo: pub.numero_processo,
+            telefone: '',
+            advogado_responsavel: lawyer,
+            data_limite: deadlineDate,
+            status_processo: 'Pendente',
+            observacoes: dispatchText
+          };
+          
+          const createdProcess = await addProcesso(processoData, getCurrentUser());
+          
+          showToast(`Processo do cliente "${clientName}" cadastrado com sucesso!`, 'success');
+          
+          card.classList.add('imported');
+          card.setAttribute('data-imported-process-id', createdProcess.id);
+          
+          btnImport.className = 'btn-action-danger btn-undo-import';
+          btnImport.innerHTML = `
+            <i data-lucide="undo-2"></i>
+            <span>Desfazer Importação</span>
+          `;
+          
+          atualizarTelas();
+        } catch (err) {
+          showToast("Erro ao importar processo: " + err.message, "error");
+        } finally {
+          setButtonLoading(btnImport, false);
+          window.lucide.createIcons();
+        }
+      });
+    });
+    
+    window.lucide.createIcons();
+  }
+
+  // 18. Gerenciar Advogados
+  const formGerenciarAdvogados = document.getElementById('form-gerenciar-advogados');
+  if (formGerenciarAdvogados) {
+    formGerenciarAdvogados.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const n1 = document.getElementById('adv-nome-1').value.trim();
+      const n2 = document.getElementById('adv-nome-2').value.trim();
+      const n3 = document.getElementById('adv-nome-3').value.trim();
+      const n4 = document.getElementById('adv-nome-4').value.trim();
+      const n5 = document.getElementById('adv-nome-5').value.trim();
+      
+      if (!n1 || !n2 || !n3 || !n4 || !n5) {
+        showToast("Todos os nomes de advogados são obrigatórios.", "warning");
+        return;
+      }
+      
+      localStorage.setItem('as_advogado_nome_1', n1);
+      localStorage.setItem('as_advogado_nome_2', n2);
+      localStorage.setItem('as_advogado_nome_3', n3);
+      localStorage.setItem('as_advogado_nome_4', n4);
+      localStorage.setItem('as_advogado_nome_5', n5);
+      
+      showToast("Nomes dos advogados atualizados com sucesso!", "success");
+      
+      // Atualizar todas as telas e selects
+      atualizarTelas();
     });
   }
 };

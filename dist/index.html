@@ -27,8 +27,8 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.6.0/dist/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.js"></script>
-  <script type="module" crossorigin src="./assets/index-BoKQ7p5h.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CA4AZCtW.css">
+  <script type="module" crossorigin src="./assets/index-DlO3hAT2.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-Cot4O6Rg.css">
 </head>
 <body>
   <!-- Marca d'água de iniciais no plano de fundo -->
@@ -384,6 +384,10 @@
             </div>
             
             <div class="action-buttons-group-processos" style="display: flex; gap: 10px;">
+              <button type="button" id="btn-open-import-pdf" class="btn-action-secondary aasp-color">
+                <i data-lucide="file-up"></i>
+                <span>Importar PDF AASP</span>
+              </button>
               <button type="button" id="btn-export-pdf" class="btn-action-secondary pdf-color">
                 <i data-lucide="file-text"></i>
                 <span>Exportar PDF</span>
@@ -512,6 +516,47 @@
               </div>
             </div>
             
+            <!-- Bloco Novo: Gerenciar Advogados -->
+            <div class="corporate-settings-card" style="grid-column: span 2;">
+              <div class="card-header-styled">
+                <i data-lucide="users"></i>
+                <h3>Gerenciar Nome dos Advogados</h3>
+              </div>
+              <div class="card-body-styled">
+                <p class="settings-block-desc">
+                  Edite o nome de exibição dos advogados correspondentes a cada coluna do Kanban e filtros do sistema.
+                </p>
+                <form id="form-gerenciar-advogados" style="max-width: 480px;">
+                  <div class="form-control-group">
+                    <label for="adv-nome-1"><i data-lucide="user"></i> Coluna 1 (Padrão: Dra. Regina)</label>
+                    <input type="text" id="adv-nome-1" required placeholder="Nome do Advogado 1">
+                  </div>
+                  <div class="form-control-group">
+                    <label for="adv-nome-2"><i data-lucide="user"></i> Coluna 2 (Padrão: Dr. Eloi)</label>
+                    <input type="text" id="adv-nome-2" required placeholder="Nome do Advogado 2">
+                  </div>
+                  <div class="form-control-group">
+                    <label for="adv-nome-3"><i data-lucide="user"></i> Coluna 3 (Padrão: Dr. Walisson)</label>
+                    <input type="text" id="adv-nome-3" required placeholder="Nome do Advogado 3">
+                  </div>
+                  <div class="form-control-group">
+                    <label for="adv-nome-4"><i data-lucide="user"></i> Coluna 4 (Padrão: Dra. Andreia)</label>
+                    <input type="text" id="adv-nome-4" required placeholder="Nome do Advogado 4">
+                  </div>
+                  <div class="form-control-group">
+                    <label for="adv-nome-5"><i data-lucide="user"></i> Coluna 5 (Padrão: Dra. Iza)</label>
+                    <input type="text" id="adv-nome-5" required placeholder="Nome do Advogado 5">
+                  </div>
+                  <div style="margin-top: 15px;">
+                    <button type="submit" class="btn-action-primary" style="width: auto; padding: 10px 24px;">
+                      <i data-lucide="save"></i>
+                      <span>Salvar Advogados</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
             <!-- Bloco 2: Segurança & Backup -->
             <div id="settings-card-backup" class="corporate-settings-card" style="grid-column: span 2;">
               <div class="card-header-styled">
@@ -733,8 +778,56 @@
         </div>
       </div>
       
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <button type="button" class="btn-action-primary" id="btn-edit-from-details" style="background: var(--gold-primary); color: var(--primary-dark); width: auto; padding: 10px 24px;">
+          <i data-lucide="edit-3"></i>
+          <span>Editar Processo / Prazos</span>
+        </button>
+        <button type="button" class="btn-action-secondary" id="btn-close-details-modal-footer" style="margin-left: auto;">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: IMPORTAÇÃO DE PUBLICASÕES PDF (AASP) ================= -->
+  <div id="modal-import-pdf" class="modal-overlay" style="display: none;">
+    <div class="modal-box process-details-box" style="width: 850px; max-width: 95%;">
+      <div class="modal-header">
+        <h3>Importar Publicações PDF (AASP)</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-import-pdf-modal"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="settings-block-desc" style="margin-bottom: 15px;">
+          Selecione ou arraste o arquivo PDF de publicações diárias da AASP. O sistema processará as publicações, identificará os processos e preencherá automaticamente os prazos e os clientes.
+        </p>
+
+        <!-- Dropzone de Upload -->
+        <div id="pdf-dropzone" class="pdf-upload-dropzone">
+          <i data-lucide="file-up" class="dropzone-icon"></i>
+          <p class="dropzone-title">Arraste o arquivo PDF aqui ou clique para selecionar</p>
+          <p class="dropzone-subtitle">Apenas arquivos .pdf são suportados</p>
+          <input type="file" id="input-pdf-file" accept=".pdf" style="display: none;">
+        </div>
+
+        <!-- Feedback de Processamento -->
+        <div id="pdf-loading-status" style="display: none; text-align: center; padding: 30px;">
+          <span class="spinner-loading" style="width: 32px; height: 32px; border-width: 3px;"></span>
+          <p style="margin-top: 10px; font-weight: 500;" id="pdf-loading-message">Lendo arquivo e extraindo textos...</p>
+        </div>
+
+        <!-- Resultados da Análise -->
+        <div id="pdf-import-results-container" style="display: none; margin-top: 20px;">
+          <h4 style="color: var(--gold-primary); text-transform: uppercase; margin-bottom: 12px; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="list-checks" style="width: 18px; height: 18px;"></i>
+            Publicações Identificadas (<span id="pdf-results-count">0</span>)
+          </h4>
+
+          <div id="pdf-publications-list" class="publications-list-scroll">
+            <!-- Cards injetados via JS -->
+          </div>
+        </div>
+      </div>
       <div class="modal-footer">
-        <button type="button" class="btn-action-secondary" id="btn-close-details-modal-footer">Fechar</button>
+        <button type="button" class="btn-action-secondary" id="btn-close-import-pdf-footer">Fechar</button>
       </div>
     </div>
   </div>
