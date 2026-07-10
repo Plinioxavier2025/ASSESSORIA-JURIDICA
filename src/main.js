@@ -995,7 +995,7 @@ async function abrirModalCadastro(processoId = null) {
     document.getElementById('proc-numero').value = p.numero_processo;
     document.getElementById('proc-telefone').value = p.telefone || '';
     document.getElementById('proc-advogado').value = p.advogado_responsavel;
-    document.getElementById('proc-data-limite').value = p.data_limite;
+    document.getElementById('proc-data-limite').value = formatarDataBR(p.data_limite);
     document.getElementById('proc-status').value = p.status_processo;
     document.getElementById('proc-observacoes').value = p.observacoes || '';
   } else {
@@ -1258,7 +1258,14 @@ const inicializarApp = async () => {
       numero_processo: document.getElementById('proc-numero').value.trim() || 'Não informado',
       telefone: document.getElementById('proc-telefone').value.trim(),
       advogado_responsavel: document.getElementById('proc-advogado').value,
-      data_limite: document.getElementById('proc-data-limite').value,
+      data_limite: (() => {
+        let val = document.getElementById('proc-data-limite').value.trim();
+        if (val && /^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
+          const parts = val.split('/');
+          return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        return val;
+      })(),
       status_processo: document.getElementById('proc-status').value || 'Pendente',
       observacoes: document.getElementById('proc-observacoes').value.trim()
     };
@@ -1293,6 +1300,12 @@ const inicializarApp = async () => {
 
     if (!procData.data_limite) {
       showToast("A data limite do prazo é obrigatória.", "warning");
+      return;
+    }
+
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(procData.data_limite)) {
+      showToast("Data limite inválida. Use o formato DIA/MÊS/ANO (ex: 25/07/2026).", "warning");
       return;
     }
 
@@ -1763,7 +1776,7 @@ const inicializarApp = async () => {
               
               <div class="form-control-group" style="margin-bottom: 0;">
                 <label style="font-size: 11px;">Data Limite do Prazo *</label>
-                <input type="date" class="pub-deadline-input" value="${escapeHTML(pub.data_limite)}" required style="padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%;">
+                <input type="text" class="pub-deadline-input" value="${escapeHTML(formatarDataBR(pub.data_limite))}" required placeholder="DD/MM/AAAA" style="padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%;">
               </div>
             </div>
             
@@ -1835,10 +1848,9 @@ const inicializarApp = async () => {
 
         const selectLawyer = card.querySelector('.pub-lawyer-select');
         const lawyer = selectLawyer.value;
-        const deadlineDateRaw = card.querySelector('.pub-deadline-input').value;
-        let deadlineDate = deadlineDateRaw;
+        let deadlineDate = card.querySelector('.pub-deadline-input').value.trim();
         
-        // Sanitizar formato de data caso o navegador/usuario use formato texto puro DD/MM/AAAA
+        // Converter de DD/MM/AAAA para YYYY-MM-DD
         if (deadlineDate && /^\d{2}\/\d{2}\/\d{4}$/.test(deadlineDate)) {
           const parts = deadlineDate.split('/');
           deadlineDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
@@ -1857,6 +1869,12 @@ const inicializarApp = async () => {
         }
         if (!deadlineDate) {
           showToast("A data limite é obrigatória.", "warning");
+          return;
+        }
+
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(deadlineDate)) {
+          showToast("Data limite inválida. Use o formato DIA/MÊS/ANO (ex: 25/07/2026).", "warning");
           return;
         }
         
