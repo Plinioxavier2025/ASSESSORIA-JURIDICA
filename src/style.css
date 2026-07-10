@@ -1040,8 +1040,10 @@ h6 {
 .app-views-container {
   flex-grow: 1;
   padding: 25px 30px;
-  overflow: auto;
+  overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-tab-view {
@@ -1050,7 +1052,14 @@ h6 {
 }
 
 .app-tab-view.active {
+  display: flex;
+  flex-direction: column;
+}
+
+#tab-configuracoes.active,
+#tab-usuarios.active {
   display: block;
+  overflow-y: auto;
 }
 
 /* ----------------- 1. ABA DASHBOARD (KANBAN) ----------------- */
@@ -1409,7 +1418,8 @@ h6 {
   border-radius: 12px;
   overflow-x: auto;
   overflow-y: auto;
-  max-height: calc(100vh - 220px);
+  flex-grow: 1;
+  height: 0;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   width: 100%;
 }
