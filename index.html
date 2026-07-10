@@ -792,52 +792,32 @@
 
   <!-- ================= MODAL: IMPORTAÇÃO DE PUBLICASÕES PDF (AASP) ================= -->
   <div id="modal-import-pdf" class="modal-overlay" style="display: none;">
-    <div class="modal-box process-details-box" style="width: 850px; max-width: 95%;">
+    <div class="modal-box" style="width: 550px; max-width: 95%;">
       <div class="modal-header">
         <h3>Importar Publicações PDF (AASP)</h3>
         <button type="button" class="btn-close-modal" id="btn-close-import-pdf-modal"><i data-lucide="x"></i></button>
       </div>
       <div class="modal-body">
         <p class="settings-block-desc" style="margin-bottom: 15px;">
-          Selecione ou arraste o arquivo PDF de publicações diárias da AASP. O sistema processará as publicações, identificará os processos e preencherá automaticamente os prazos e os clientes.
+          Selecione ou arraste o arquivo PDF de publicações diárias da AASP. O sistema processará o arquivo e importará todos os prazos e clientes detectados diretamente para a lista de clientes para que você possa revisar e alterar.
         </p>
 
         <!-- Dropzone de Upload -->
-        <div id="pdf-dropzone" class="pdf-upload-dropzone">
-          <i data-lucide="file-up" class="dropzone-icon"></i>
-          <p class="dropzone-title">Arraste o arquivo PDF aqui ou clique para selecionar</p>
-          <p class="dropzone-subtitle">Apenas arquivos .pdf são suportados</p>
+        <div id="pdf-dropzone" class="pdf-upload-dropzone" style="padding: 40px 20px;">
+          <i data-lucide="file-up" class="dropzone-icon" style="width: 48px; height: 48px; margin-bottom: 12px; color: var(--gold-primary);"></i>
+          <p class="dropzone-title" style="font-size: 14px; font-weight: 600; margin-bottom: 5px;">Arraste o arquivo PDF aqui ou clique para selecionar</p>
+          <p class="dropzone-subtitle" style="font-size: 12px; color: var(--text-muted);">Apenas arquivos .pdf são suportados</p>
           <input type="file" id="input-pdf-file" accept=".pdf" style="display: none;">
         </div>
 
         <!-- Feedback de Processamento -->
-        <div id="pdf-loading-status" style="display: none; text-align: center; padding: 30px;">
-          <span class="spinner-loading" style="width: 32px; height: 32px; border-width: 3px;"></span>
-          <p style="margin-top: 10px; font-weight: 500;" id="pdf-loading-message">Lendo arquivo e extraindo textos...</p>
-        </div>
-
-        <!-- Resultados da Análise -->
-        <div id="pdf-import-results-container" style="display: none; margin-top: 20px;">
-          <h4 style="color: var(--gold-primary); text-transform: uppercase; margin-bottom: 12px; font-size: 13px; display: flex; align-items: center; gap: 8px;">
-            <i data-lucide="list-checks" style="width: 18px; height: 18px;"></i>
-            Publicações Identificadas (<span id="pdf-results-count">0</span>)
-          </h4>
-
-          <div class="pdf-split-layout">
-            <!-- Coluna Esquerda: Lista de Publicações -->
-            <div id="pdf-publications-list" class="publications-list-column">
-              <!-- Cards injetados via JS -->
-            </div>
-
-            <!-- Coluna Direita: Painel de Detalhes e Ações -->
-            <div id="pdf-publication-details-panel" class="publication-details-panel">
-              <!-- Detalhes injetados via JS -->
-            </div>
-          </div>
+        <div id="pdf-loading-status" style="display: none; text-align: center; padding: 40px 20px;">
+          <span class="spinner-loading" style="width: 40px; height: 40px; border-width: 3px; display: inline-block;"></span>
+          <p style="margin-top: 15px; font-weight: 600; font-size: 14px; color: var(--gold-primary);" id="pdf-loading-message">Lendo arquivo e extraindo textos...</p>
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn-action-secondary" id="btn-close-import-pdf-footer">Fechar</button>
+        <button type="button" class="btn-action-secondary" id="btn-close-import-pdf-footer">Cancelar</button>
       </div>
     </div>
   </div>
