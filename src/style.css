@@ -1056,8 +1056,7 @@ h6 {
   flex-direction: column;
 }
 
-#tab-configuracoes.active,
-#tab-usuarios.active {
+#tab-configuracoes.active {
   display: block;
   overflow-y: auto;
 }

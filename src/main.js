@@ -1758,7 +1758,6 @@ const inicializarApp = async () => {
     document.getElementById('user-modal-title').textContent = "Cadastrar Novo Usuário";
     document.getElementById('user-id-input').value = '';
     document.getElementById('user-nome-completo').value = '';
-    document.getElementById('user-email').value = '';
     document.getElementById('user-username').value = '';
     document.getElementById('user-permission').value = 'Operador';
 
