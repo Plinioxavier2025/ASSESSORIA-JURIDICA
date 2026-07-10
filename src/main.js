@@ -127,9 +127,15 @@ export function showToast(message, type = 'info') {
 // Calcula dias restantes considerando fusos horários locais
 function calcularDiasRestantes(dataLimiteStr) {
   if (!dataLimiteStr) return 0;
-  const dataLimite = new Date(dataLimiteStr + 'T00:00:00');
-  const diffTime = dataLimite - DATA_HOJE_SISTEMA;
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const todayStr = DATA_HOJE_SISTEMA.toISOString().split('T')[0];
+  
+  if (dataLimiteStr < todayStr) {
+    const dataLimite = new Date(dataLimiteStr + 'T00:00:00');
+    const diffTime = dataLimite - DATA_HOJE_SISTEMA;
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  }
+  
+  return calcularDiasUteisEntreDatas(todayStr, dataLimiteStr);
 }
 
 // Formata data ISO (AAAA-MM-DD) para formato brasileiro (DD/MM/AAAA)

@@ -1437,17 +1437,17 @@ h6 {
   color: var(--gold-primary);
   font-family: var(--font-title);
   font-weight: 700;
-  font-size: 12px;
+  font-size: 13.5px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 14px 18px;
+  padding: 16px 20px;
   border-bottom: 1.5px solid var(--border-gold);
 }
 
 .corporate-data-table td {
-  padding: 12px 18px;
+  padding: 15px 20px;
   border-bottom: 1px solid var(--border-color);
-  font-size: 13px;
+  font-size: 14.5px;
   color: var(--text-normal);
   vertical-align: middle;
 }
@@ -1471,7 +1471,7 @@ h6 {
 
 .table-client-info strong {
   color: var(--text-white);
-  font-size: 13.5px;
+  font-size: 15.5px;
 }
 
 .td-actions {
@@ -1483,21 +1483,28 @@ h6 {
 .btn-table-action {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-color);
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 6px;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   transition: var(--transition-smooth);
 }
 
 .btn-table-action i {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
+}
+
+.custom-checkbox-table {
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+  accent-color: var(--gold-primary);
 }
 
 .btn-table-action:hover {
