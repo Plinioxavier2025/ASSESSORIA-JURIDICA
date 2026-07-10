@@ -1835,7 +1835,15 @@ const inicializarApp = async () => {
 
         const selectLawyer = card.querySelector('.pub-lawyer-select');
         const lawyer = selectLawyer.value;
-        const deadlineDate = card.querySelector('.pub-deadline-input').value;
+        const deadlineDateRaw = card.querySelector('.pub-deadline-input').value;
+        let deadlineDate = deadlineDateRaw;
+        
+        // Sanitizar formato de data caso o navegador/usuario use formato texto puro DD/MM/AAAA
+        if (deadlineDate && /^\d{2}\/\d{2}\/\d{4}$/.test(deadlineDate)) {
+          const parts = deadlineDate.split('/');
+          deadlineDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        
         const dispatchText = card.querySelector('.pub-dispatch-input').value.trim();
         
         if (!clientName) {
