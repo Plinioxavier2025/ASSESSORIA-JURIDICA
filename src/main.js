@@ -389,30 +389,32 @@ function extrairDiasDoTexto(snippet) {
   return null;
 }
 
-// Analisa o trecho de texto e detecta o prazo em dias
+// Analisa o trecho de texto e detecta o prazo em dias (filtrando apenas termos úteis de 1 a 30 dias)
 function detectarDiasPrazo(blockText) {
-  // Regex super flexível que tolera adjetivos judiciais e a palavra "até" entre "prazo" e "dias"
-  const daysRegex = /(?:prazo\s+(?:[a-zA-Z]{1,20}\s+){0,3}de|em|no\s+prazo\s+de|prazo\s*:\s*)\s*(?:ate\s+)?([a-zA-Z\d\s\(\)-]{1,45})\s+dias/i;
-  const match = blockText.match(daysRegex);
+  const normalizedBlock = blockText.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  // Usamos exec em loop para encontrar todas as ocorrências de padrões de prazo em dias
+  const daysRegexGlobal = /(?:prazo\s+(?:[a-zA-Z]{1,20}\s+){0,3}de|em|no\s+prazo\s+de|prazo\s*:\s*)\s*(?:ate\s+)?([a-zA-Z\d\s\(\)-]{1,45})\s+dias/gi;
   
-  if (match) {
+  let match;
+  while ((match = daysRegexGlobal.exec(normalizedBlock)) !== null) {
     const extracted = extrairDiasDoTexto(match[1]);
-    if (extracted !== null) {
+    if (extracted !== null && extracted > 0 && extracted <= 30) {
       return { days: extracted, detected: true };
     }
   }
 
-  // Fallback para procurar padrões alternativos de número + dias
-  const fallbackRegex = /\b(\d+|um|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa)\s+dias/i;
-  const fallbackMatch = blockText.match(fallbackRegex);
-  if (fallbackMatch) {
+  // Fallback global
+  const fallbackRegexGlobal = /\b(\d+|um|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa)\s+dias/gi;
+  let fallbackMatch;
+  while ((fallbackMatch = fallbackRegexGlobal.exec(normalizedBlock)) !== null) {
     const extracted = extrairDiasDoTexto(fallbackMatch[1]);
-    if (extracted !== null) {
+    if (extracted !== null && extracted > 0 && extracted <= 30) {
       return { days: extracted, detected: true };
     }
   }
 
-  return { days: 15, detected: false }; // Padrão
+  return { days: 15, detected: false };
 }
 
 // Detecta qual advogado está mencionado no texto da publicação

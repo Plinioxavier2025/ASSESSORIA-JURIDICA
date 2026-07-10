@@ -79,14 +79,11 @@ function calcularDataLimitePublicacao(blockText, pdfBaseDate, extractedDays, has
     }
   }
 
-  console.log('DEBUG futureDates:', futureDates);
-
   const normalizedBlockText = blockText.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   if (hasDetectedDays) {
     const isBackwards = /antes\s+(?:de\s+|da\s+|do\s+)?(?:realizacao\s+)?(?:de\s+|da\s+|do\s+)?(?:audiencia|pericia)/i.test(normalizedBlockText) || 
                         /antecedencia\s+(?:de\s+|da\s+|do\s+)?(?:audiencia|pericia)/i.test(normalizedBlockText);
-    console.log('DEBUG isBackwards:', isBackwards);
     if (isBackwards && futureDates.length > 0) {
       const targetEventDate = futureDates[0];
       const dt = new Date(targetEventDate + 'T00:00:00');
@@ -104,19 +101,78 @@ function calcularDataLimitePublicacao(blockText, pdfBaseDate, extractedDays, has
   return adicionarDiasUteis(pdfBaseDate, 15).toISOString().split('T')[0];
 }
 
-const pdfText = `
-Data impressão: segunda-feira, 06 de julho de 2026 - 10h02.
-Disponibilização: Segunda-feira, 6 de julho de 2026
-TRT2 Diário de Justiça Eletrônico Nacional
-`;
+function extrairDiasDoTexto(snippet) {
+  const digitoMatch = snippet.match(/\b\d+\b/);
+  if (digitoMatch) {
+    return parseInt(digitoMatch[0], 10);
+  }
 
-const baseDate = extrairDataPublicacaoPDF(pdfText);
+  const textoLimpo = snippet.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-const block1 = `
-Processo: 1001433-24.2026.5.02.0521
-Designo o dia 30/09/2026 11:00 horas, para a realização de audiência UNA.
-As partes poderão apresentar rol de testemunhas no prazo máximo de até 5 (cinco) dias antes da realização da audiência.
-`;
+  const palavrasMapa = {
+    'um': 1, 'uma': 1, 'dois': 2, 'duas': 2, 'tres': 3, 'quatro': 4, 'cinco': 5,
+    'seis': 6, 'sete': 7, 'oito': 8, 'nove': 9, 'dez': 10, 'onze': 11, 'doze': 12,
+    'treze': 13, 'catorze': 14, 'quatorze': 14, 'quinze': 15, 'vinte': 20, 'trinta': 30,
+    'quarenta': 40, 'cinquenta': 50, 'sessenta': 60, 'setenta': 70, 'oitenta': 80,
+    'noventa': 90
+  };
 
-const res1 = calcularDataLimitePublicacao(block1, baseDate, 5, true);
-console.log('CASO 1 (Regressivo):', res1, '-> Esperado: 2026-09-23');
+  const palavras = textoLimpo.split(/\s+/);
+  let valorAcumulado = 0;
+  let encontrouAlguma = false;
+
+  for (let i = 0; i < palavras.length; i++) {
+    const p = palavras[i];
+    if (palavrasMapa[p] !== undefined) {
+      encontrouAlguma = true;
+      const val = palavrasMapa[p];
+      if (val >= 20 && palavras[i + 1] === 'e' && palavrasMapa[palavras[i + 2]] !== undefined && palavrasMapa[palavras[i + 2]] < 10) {
+        valorAcumulado += val + palavrasMapa[palavras[i + 2]];
+        i += 2;
+      } else {
+        valorAcumulado += val;
+      }
+    }
+  }
+
+  if (encontrouAlguma) {
+    return valorAcumulado;
+  }
+  return null;
+}
+
+function detectarDiasPrazo(blockText) {
+  const normalizedBlock = blockText.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  // Usamos exec em loop para encontrar todas as ocorrências de padrões de prazo em dias
+  const daysRegexGlobal = /(?:prazo\s+(?:[a-zA-Z]{1,20}\s+){0,3}de|em|no\s+prazo\s+de|prazo\s*:\s*)\s*(?:ate\s+)?([a-zA-Z\d\s\(\)-]{1,45})\s+dias/gi;
+  
+  let match;
+  while ((match = daysRegexGlobal.exec(normalizedBlock)) !== null) {
+    const extracted = extrairDiasDoTexto(match[1]);
+    if (extracted !== null && extracted > 0 && extracted <= 30) {
+      return { days: extracted, detected: true };
+    }
+  }
+
+  // Fallback global
+  const fallbackRegexGlobal = /\b(\d+|um|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa)\s+dias/gi;
+  let fallbackMatch;
+  while ((fallbackMatch = fallbackRegexGlobal.exec(normalizedBlock)) !== null) {
+    const extracted = extrairDiasDoTexto(fallbackMatch[1]);
+    if (extracted !== null && extracted > 0 && extracted <= 30) {
+      return { days: extracted, detected: true };
+    }
+  }
+
+  return { days: 15, detected: false };
+}
+
+module.exports = {
+  adicionarDiasUteis,
+  subtrairDiasUteis,
+  extrairDataPublicacaoPDF,
+  calcularDataLimitePublicacao,
+  detectarDiasPrazo
+};
