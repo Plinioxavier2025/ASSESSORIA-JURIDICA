@@ -229,6 +229,101 @@ function adicionarDiasUteis(dataInicio, dias) {
   return data;
 }
 
+// Subtrai dias úteis de uma data final
+function subtrairDiasUteis(dataFim, dias) {
+  let data = new Date(dataFim);
+  let c = 0;
+  while (c < dias) {
+    data.setDate(data.getDate() - 1);
+    const diaSemana = data.getDay();
+    if (diaSemana !== 0 && diaSemana !== 6) { // 0 = Domingo, 6 = Sábado
+      c++;
+    }
+  }
+  return data;
+}
+
+// Extrai a data de disponibilização/publicação no topo do arquivo PDF
+function extrairDataPublicacaoPDF(fullText) {
+  const textSubset = fullText.substring(0, 2000);
+  const mesMapa = {
+    'janeiro': 0, 'fevereiro': 1, 'marco': 2, 'abril': 3, 'maio': 4, 'junho': 5,
+    'julho': 6, 'agosto': 7, 'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11
+  };
+  
+  const regexExtenso = /disponibilizacao:\s*[a-zA-Z\-–\s,]*(\d{1,2})\s+de\s+([a-zA-Z]+)\s+de\s+(\d{4})/i;
+  const matchExt = textSubset.match(regexExtenso);
+  if (matchExt) {
+    const dia = parseInt(matchExt[1], 10);
+    const mesNome = matchExt[2].toLowerCase().trim();
+    const ano = parseInt(matchExt[3], 10);
+    if (mesMapa[mesNome] !== undefined) {
+      const d = new Date(ano, mesMapa[mesNome], dia);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+  }
+  
+  // Fallback para qualquer data encontrada no topo
+  const regexData = /\b(\d{2})[\/\.-](\d{2})[\/\.-](\d{4})\b/;
+  const matchData = textSubset.match(regexData);
+  if (matchData) {
+    const d = new Date(parseInt(matchData[3], 10), parseInt(matchData[2], 10) - 1, parseInt(matchData[1], 10));
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+
+// Calcula a data limite da publicação, tratando prazos regressivos a partir de audiências e datas específicas
+function calcularDataLimitePublicacao(blockText, pdfBaseDate, extractedDays, hasDetectedDays) {
+  const pdfBaseDateStr = pdfBaseDate.toISOString().split('T')[0];
+
+  // 1. Procurar por datas no texto que possam ser audiências ou datas específicas limites
+  const datePatternGlobal = /\b(\d{2})[\/\.](\d{2})[\/\.](\d{4})\b/g;
+  let futureDates = [];
+  let matchDate;
+  while ((matchDate = datePatternGlobal.exec(blockText)) !== null) {
+    const day = matchDate[1];
+    const month = matchDate[2];
+    const year = matchDate[3];
+    const foundDate = `${year}-${month}-${day}`;
+    if (foundDate > pdfBaseDateStr) {
+      futureDates.push(foundDate);
+    }
+  }
+
+  // 2. Se há prazo explícito detectado (ex: "5 dias", "15 dias")
+  if (hasDetectedDays) {
+    const isBackwards = /antes\s+(?:de\s+|da\s+|do\s+)?(?:realizacao\s+)?(?:de\s+|da\s+|do\s+)?(?:audiencia|pericia)/i.test(blockText) || 
+                        /antecedencia\s+(?:de\s+|da\s+|do\s+)?(?:audiencia|pericia)/i.test(blockText);
+    if (isBackwards && futureDates.length > 0) {
+      // Prazos regressivos: subtrai dias úteis da data do evento futuro (audiência)
+      const targetEventDate = futureDates[0];
+      const dt = new Date(targetEventDate + 'T00:00:00');
+      if (!isNaN(dt.getTime())) {
+        return subtrairDiasUteis(dt, extractedDays).toISOString().split('T')[0];
+      }
+    }
+    // Caso regular: somar à data de disponibilização
+    return adicionarDiasUteis(pdfBaseDate, extractedDays).toISOString().split('T')[0];
+  }
+
+  // 3. Se não há prazo em dias detectado, mas há uma data limite específica no futuro mencionada
+  if (futureDates.length > 0) {
+    // Escolhe a data futura como limite direto
+    return futureDates[0];
+  }
+
+  // 4. Fallback padrão: 15 dias úteis a partir da disponibilização
+  return adicionarDiasUteis(pdfBaseDate, 15).toISOString().split('T')[0];
+}
+
+
 // Calcula o número de dias úteis entre duas datas (exclusivo inicio, inclusivo fim)
 function calcularDiasUteisEntreDatas(inicio, fim) {
   const dInicio = new Date(inicio + 'T00:00:00');
@@ -359,6 +454,9 @@ async function loadPDFJS() {
 
 // Analisa o texto do PDF e extrai publicações estruturadas
 function parsePublications(text) {
+  // Extrair a data de disponibilização/publicação geral do PDF
+  const pdfBaseDate = extrairDataPublicacaoPDF(text);
+
   // Regex to match headers like "21 - D J E N - TJSP", "1 - D J E N - TJSP", with flexible spacing
   const headerRegex = /\b(\d+)\s*-\s*(D\s*J\s*E\s*N|D\s*J\s*E|D\s*J)\s*-\s*([A-Z0-9]+)\b/gi;
   
@@ -425,19 +523,7 @@ function parsePublications(text) {
         specificDate = `${year}-${month}-${day}`;
       }
       
-      let calculatedDate;
-      if (hasDetectedDays) {
-        calculatedDate = adicionarDiasUteis(new Date(), extractedDays).toISOString().split('T')[0];
-      } else if (specificDate) {
-        const todayIso = new Date().toISOString().split('T')[0];
-        if (specificDate >= todayIso) {
-          calculatedDate = specificDate;
-        } else {
-          calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
-        }
-      } else {
-        calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
-      }
+      const calculatedDate = calcularDataLimitePublicacao(blockText, pdfBaseDate, extractedDays, hasDetectedDays);
       
       let orderText = blockText.trim();
       
@@ -512,19 +598,7 @@ function parsePublications(text) {
         specificDate = `${year}-${month}-${day}`;
       }
       
-      let calculatedDate;
-      if (hasDetectedDays) {
-        calculatedDate = adicionarDiasUteis(new Date(), extractedDays).toISOString().split('T')[0];
-      } else if (specificDate) {
-        const todayIso = new Date().toISOString().split('T')[0];
-        if (specificDate >= todayIso) {
-          calculatedDate = specificDate;
-        } else {
-          calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
-        }
-      } else {
-        calculatedDate = adicionarDiasUteis(new Date(), 15).toISOString().split('T')[0];
-      }
+      const calculatedDate = calcularDataLimitePublicacao(blockText, pdfBaseDate, extractedDays, hasDetectedDays);
       
       let orderText = blockText.trim();
       
