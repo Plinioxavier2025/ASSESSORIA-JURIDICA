@@ -643,6 +643,8 @@ export async function atualizarTelas() {
     return;
   }
 
+  atualizarBotaoDesfazer();
+
 
 
   // 1. Obter Processos
@@ -848,9 +850,14 @@ function renderizarTabelaProcessos(processos) {
 
     return matchesTxt && matchesAdv && matchesStatus && matchesUrg;
   });
+  const chkSelectAll = document.getElementById('chk-select-all');
+  if (chkSelectAll) {
+    chkSelectAll.checked = false;
+  }
+  atualizarBotaoExclusaoMassa();
 
   if (filtrados.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted);">Nenhum processo encontrado com os filtros atuais.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted);">Nenhum processo encontrado com os filtros atuais.</td></tr>`;
     return;
   }
 
@@ -858,12 +865,14 @@ function renderizarTabelaProcessos(processos) {
     const dias = calcularDiasRestantes(p.data_limite);
     const concluido = p.status_processo === 'Concluído' || p.prazo_concluido;
     const classeCor = obterClassePrazo(dias, concluido);
-    const currentUser = getCurrentUser();
 
     const tr = document.createElement('tr');
     tr.className = classeCor;
 
     tr.innerHTML = `
+      <td style="text-align: center;">
+        <input type="checkbox" class="chk-select-process custom-checkbox-table" data-id="${p.id}">
+      </td>
       <td>
         <div class="table-client-info">
           <strong>${escapeHTML(p.nome_cliente)}</strong>
@@ -1467,6 +1476,83 @@ const inicializarApp = async () => {
     atualizarTelas();
   });
 
+  // 6b. Checkboxes de Seleção de Processos & Botões de Ação
+  const tableBody = document.getElementById('table-processos-body');
+  if (tableBody) {
+    tableBody.addEventListener('change', (e) => {
+      if (e.target.classList.contains('chk-select-process')) {
+        atualizarBotaoExclusaoMassa();
+      }
+    });
+  }
+
+  const chkSelectAll = document.getElementById('chk-select-all');
+  if (chkSelectAll) {
+    chkSelectAll.addEventListener('change', () => {
+      const checked = chkSelectAll.checked;
+      const checkboxes = document.querySelectorAll('.chk-select-process');
+      checkboxes.forEach(cb => {
+        cb.checked = checked;
+      });
+      atualizarBotaoExclusaoMassa();
+    });
+  }
+
+  const btnBulkDelete = document.getElementById('btn-bulk-delete');
+  if (btnBulkDelete) {
+    btnBulkDelete.addEventListener('click', async () => {
+      const selectedChecked = document.querySelectorAll('.chk-select-process:checked');
+      if (selectedChecked.length === 0) return;
+
+      const ids = Array.from(selectedChecked).map(cb => cb.dataset.id);
+      if (confirm(`Deseja mesmo excluir permanentemente os ${ids.length} processos selecionados?\nEsta ação registrará logs de auditoria correspondentes.`)) {
+        setButtonLoading(btnBulkDelete, true, "Excluindo...");
+        try {
+          const currentUser = getCurrentUser();
+          for (const id of ids) {
+            await deleteProcesso(id, currentUser);
+          }
+          showToast(`${ids.length} processos excluídos com sucesso.`, 'success');
+          atualizarTelas();
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          setButtonLoading(btnBulkDelete, false);
+        }
+      }
+    });
+  }
+
+  const btnUndoImport = document.getElementById('btn-undo-import');
+  if (btnUndoImport) {
+    btnUndoImport.addEventListener('click', async () => {
+      const lastImportedIdsStr = localStorage.getItem('as_last_imported_ids');
+      if (!lastImportedIdsStr) return;
+
+      const ids = JSON.parse(lastImportedIdsStr);
+      if (confirm(`Deseja desfazer a última importação e excluir permanentemente os ${ids.length} processos importados?`)) {
+        setButtonLoading(btnUndoImport, true, "Desfazendo...");
+        try {
+          const currentUser = getCurrentUser();
+          for (const id of ids) {
+            try {
+              await deleteProcesso(id, currentUser);
+            } catch (e) {
+              console.warn(`Erro ao excluir processo no desfazer: ${id}`, e);
+            }
+          }
+          localStorage.removeItem('as_last_imported_ids');
+          showToast(`Última importação desfeita com sucesso! ${ids.length} processos removidos.`, 'success');
+          atualizarTelas();
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          setButtonLoading(btnUndoImport, false);
+        }
+      }
+    });
+  }
+
   // Populador do dropdown de dias úteis no modal de cadastro
   const selectPrazoDias = document.getElementById('proc-prazo-dias');
   if (selectPrazoDias) {
@@ -1959,6 +2045,7 @@ const inicializarApp = async () => {
           let importedCount = 0;
           const currentUser = getCurrentUser();
           
+          let importedIds = [];
           for (const pub of publications) {
             const detectLawyer = detectarAdvogadoNoTexto(pub.texto_original);
             
@@ -1973,11 +2060,20 @@ const inicializarApp = async () => {
             };
             
             try {
-              await addProcesso(processoData, currentUser);
-              importedCount++;
+              const res = await addProcesso(processoData, currentUser);
+              if (res && res.id) {
+                importedIds.push(res.id);
+                importedCount++;
+              }
             } catch (err) {
               console.error("Erro ao importar no lote:", err);
             }
+          }
+          
+          if (importedIds.length > 0) {
+            localStorage.setItem('as_last_imported_ids', JSON.stringify(importedIds));
+          } else {
+            localStorage.removeItem('as_last_imported_ids');
           }
           
           showToast(`${importedCount} publicações importadas com sucesso!`, 'success');
@@ -2097,4 +2193,39 @@ if ('serviceWorker' in navigator && window.location.hostname !== 'localhost' && 
       .then(reg => console.log('PWA Service Worker registrado com sucesso:', reg.scope))
       .catch(err => console.error('Erro ao registrar PWA Service Worker:', err));
   });
+}
+
+function atualizarBotaoExclusaoMassa() {
+  const btnBulkDelete = document.getElementById('btn-bulk-delete');
+  if (!btnBulkDelete) return;
+
+  const selectedChecked = document.querySelectorAll('.chk-select-process:checked');
+  const count = selectedChecked.length;
+
+  if (count > 0) {
+    btnBulkDelete.style.display = 'inline-flex';
+    const textEl = document.getElementById('bulk-delete-text');
+    if (textEl) textEl.textContent = `Excluir Selecionados (${count})`;
+  } else {
+    btnBulkDelete.style.display = 'none';
+  }
+}
+
+function atualizarBotaoDesfazer() {
+  const btnUndoImport = document.getElementById('btn-undo-import');
+  if (!btnUndoImport) return;
+
+  const lastImportedIdsStr = localStorage.getItem('as_last_imported_ids');
+  if (lastImportedIdsStr) {
+    try {
+      const ids = JSON.parse(lastImportedIdsStr);
+      if (ids && ids.length > 0) {
+        btnUndoImport.style.display = 'inline-flex';
+        return;
+      }
+    } catch (e) {
+      console.warn("Erro ao ler last imported ids:", e);
+    }
+  }
+  btnUndoImport.style.display = 'none';
 }

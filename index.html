@@ -386,6 +386,14 @@
             </div>
             
             <div class="action-buttons-group-processos" style="display: flex; gap: 10px;">
+              <button type="button" id="btn-undo-import" class="btn-action-secondary" style="display: none; border-color: rgba(231, 76, 60, 0.4); color: #e74c3c;">
+                <i data-lucide="undo-2"></i>
+                <span>Desfazer Importação</span>
+              </button>
+              <button type="button" id="btn-bulk-delete" class="btn-action-secondary" style="display: none; background: rgba(231, 76, 60, 0.12); border-color: #e74c3c; color: #e74c3c; font-weight: 600;">
+                <i data-lucide="trash-2"></i>
+                <span id="bulk-delete-text">Excluir Selecionados (0)</span>
+              </button>
               <button type="button" id="btn-open-import-pdf" class="btn-action-secondary aasp-color">
                 <i data-lucide="file-up"></i>
                 <span>Importar PDF AASP</span>
@@ -405,6 +413,7 @@
             <table class="corporate-data-table" id="table-processos">
               <thead>
                 <tr>
+                  <th style="width: 45px; text-align: center;"><input type="checkbox" id="chk-select-all" class="custom-checkbox-table"></th>
                   <th>Cliente</th>
                   <th>Nº Processo</th>
                   <th>Telefone</th>

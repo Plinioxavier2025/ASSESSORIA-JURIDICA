@@ -47,6 +47,11 @@
   box-sizing: border-box;
 }
 
+html, body {
+  height: 100dvh;
+  overflow: hidden;
+}
+
 body {
   font-family: var(--font-body);
   background: linear-gradient(135deg, rgba(18, 3, 5, 0.88) 0%, rgba(8, 0, 1, 0.82) 100%), url('./law_office_bg.png');
@@ -54,8 +59,6 @@ body {
   background-position: center;
   background-attachment: fixed;
   color: var(--text-normal);
-  overflow-x: hidden;
-  height: 100dvh;
 }
 
 input,
@@ -2828,4 +2831,43 @@ h6 {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* Estilos para Checkbox customizado na tabela */
+.custom-checkbox-table {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 17px;
+  height: 17px;
+  border: 1.5px solid var(--border-gold);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: var(--transition-smooth);
+}
+
+.custom-checkbox-table:checked {
+  background: var(--gold-primary);
+  border-color: var(--gold-primary);
+}
+
+.custom-checkbox-table:checked::after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 8px;
+  border: solid var(--primary-dark);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  top: 2px;
+  left: 5px;
+}
+
+.custom-checkbox-table:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
 }
