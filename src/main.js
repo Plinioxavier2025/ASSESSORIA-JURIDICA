@@ -1611,6 +1611,9 @@ const inicializarApp = async () => {
   const pdfImportResultsContainer = document.getElementById('pdf-import-results-container');
   const pdfPublicationsList = document.getElementById('pdf-publications-list');
   const pdfResultsCount = document.getElementById('pdf-results-count');
+  const pdfPublicationDetailsPanel = document.getElementById('pdf-publication-details-panel');
+  let activePublications = [];
+  let selectedPubIndex = null;
 
   if (btnOpenImportPdf) {
     btnOpenImportPdf.addEventListener('click', () => {
@@ -1620,6 +1623,10 @@ const inicializarApp = async () => {
       pdfPublicationsList.innerHTML = '';
       if (inputPdfFile) inputPdfFile.value = '';
       
+      // Limpar painel de detalhes e estado
+      activePublications = [];
+      mostrarDetalhesVazio();
+
       modalImportPdf.style.display = 'flex';
       window.lucide.createIcons();
     });
@@ -1707,7 +1714,14 @@ const inicializarApp = async () => {
             return;
           }
           
-          renderizarPublicacoesImportadas(publications);
+          // Inicializar estado de importação de cada publicação
+          publications.forEach(pub => {
+            pub.isImportedInDatabase = false;
+            pub.importedProcessId = null;
+          });
+
+          activePublications = publications;
+          renderizarListaClientesImportados();
         } catch (err) {
           showToast("Erro ao ler o PDF: " + err.message, "error");
           pdfLoadingStatus.style.display = 'none';
@@ -1723,67 +1737,105 @@ const inicializarApp = async () => {
     }
   }
 
-  // Função para renderizar as publicações no modal
-  function renderizarPublicacoesImportadas(publications) {
+  // Função para renderizar a lista de clientes (master) na coluna da esquerda
+  function renderizarListaClientesImportados() {
     pdfPublicationsList.innerHTML = '';
-    pdfResultsCount.textContent = publications.length;
+    pdfResultsCount.textContent = activePublications.length;
     pdfImportResultsContainer.style.display = 'block';
     
-    publications.forEach((pub, index) => {
-      const card = document.createElement('div');
-      card.className = 'publication-card animate-fade-in';
-      card.id = `pub-card-${pub.id}`;
+    mostrarDetalhesVazio();
+    
+    activePublications.forEach((pub, index) => {
+      const item = document.createElement('div');
+      item.className = 'pdf-pub-list-item animate-fade-in';
+      if (pub.isImportedInDatabase) {
+        item.classList.add('imported');
+      }
+      item.setAttribute('data-index', index);
       
-      let lawyerOptionsHTML = '<option value="" disabled selected>Selecione o Advogado</option>';
-      obterListaAdvogados().forEach(adv => {
-        lawyerOptionsHTML += `<option value="${escapeHTML(adv.dbKey)}">${escapeHTML(adv.label)}</option>`;
+      const badgeStatusHTML = pub.isImportedInDatabase
+        ? `<span class="pdf-pub-item-badge-status badge-status-imported">Importado</span>`
+        : `<span class="pdf-pub-item-badge-status badge-status-pending">Pendente</span>`;
+        
+      item.innerHTML = `
+        <span class="pdf-pub-item-client">${escapeHTML(pub.nome_cliente)}</span>
+        <div class="pdf-pub-item-meta">
+          <span>Processo: ${escapeHTML(pub.numero_processo)}</span>
+          ${badgeStatusHTML}
+        </div>
+      `;
+      
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.pdf-pub-list-item').forEach(el => el.classList.remove('active'));
+        item.classList.add('active');
+        mostrarDetalhesPublicacao(index);
       });
+      
+      pdfPublicationsList.appendChild(item);
+    });
+    
+    window.lucide.createIcons();
+  }
 
-      let partiesOptionsHTML = '';
-      if (pub.plaintiff) {
-        partiesOptionsHTML += `<option value="${escapeHTML(pub.plaintiff)}">Autor: ${escapeHTML(pub.plaintiff)}</option>`;
-      }
-      if (pub.defendant) {
-        partiesOptionsHTML += `<option value="${escapeHTML(pub.defendant)}">Réu: ${escapeHTML(pub.defendant)}</option>`;
-      }
-      partiesOptionsHTML += `<option value="${escapeHTML(pub.nome_cliente)}" selected>Sugerido: ${escapeHTML(pub.nome_cliente)}</option>`;
+  // Função para mostrar os detalhes do cliente selecionado no painel da direita
+  function mostrarDetalhesPublicacao(index) {
+    selectedPubIndex = index;
+    const pub = activePublications[index];
+    
+    let lawyerOptionsHTML = '<option value="" disabled selected>Selecione o Advogado</option>';
+    obterListaAdvogados().forEach(adv => {
+      lawyerOptionsHTML += `<option value="${escapeHTML(adv.dbKey)}" ${pub.advogado_responsavel === adv.dbKey ? 'selected' : ''}>${escapeHTML(adv.label)}</option>`;
+    });
 
-      card.innerHTML = `
-        <div class="publication-card-header">
-          <span class="pub-proc-num">${escapeHTML(pub.numero_processo)}</span>
-          <span class="pub-detected-badge">${escapeHTML(pub.has_detected_days ? `Prazo: ${pub.prazo_dias} dias` : pub.specific_date ? 'Data detectada' : 'Prazo padrão')}</span>
+    let partiesOptionsHTML = '';
+    if (pub.plaintiff) {
+      partiesOptionsHTML += `<option value="${escapeHTML(pub.plaintiff)}">Autor: ${escapeHTML(pub.plaintiff)}</option>`;
+    }
+    if (pub.defendant) {
+      partiesOptionsHTML += `<option value="${escapeHTML(pub.defendant)}">Réu: ${escapeHTML(pub.defendant)}</option>`;
+    }
+    partiesOptionsHTML += `<option value="${escapeHTML(pub.nome_cliente)}" selected>Sugerido: ${escapeHTML(pub.nome_cliente)}</option>`;
+
+    const isImported = pub.isImportedInDatabase;
+    const btnClass = isImported ? 'btn-action-danger btn-undo-import' : 'btn-action-primary btn-import-pub';
+    const btnIcon = isImported ? 'undo-2' : 'plus-circle';
+    const btnText = isImported ? 'Desfazer Importação' : 'Importar para Painel';
+
+    pdfPublicationDetailsPanel.innerHTML = `
+      <div class="pdf-details-content-wrapper animate-fade-in">
+        <div class="pdf-details-section-title">
+          <span>Detalhes do Prazo & Solicitação</span>
+          <span style="font-size: 11.5px; font-weight: normal; color: var(--text-muted);">${escapeHTML(pub.numero_processo)}</span>
         </div>
         
-        <div class="publication-card-body">
-          <div class="pub-form-inputs">
-            <div class="form-control-group" style="margin-bottom: 8px;">
-              <label style="font-size: 11px;">Nome do Cliente (Selecione ou edite se necessário)</label>
-              <div style="display: flex; gap: 8px;">
-                <select class="pub-party-select" style="flex: 1; padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px;">
-                  ${partiesOptionsHTML}
-                </select>
-                <input type="text" class="pub-client-name-input" value="${escapeHTML(pub.nome_cliente)}" style="flex: 1.2; padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px;" placeholder="Nome do Cliente">
-              </div>
+        <div class="pdf-details-scrollable-form">
+          <div class="form-control-group" style="margin-bottom: 8px;">
+            <label style="font-size: 11px;">Nome do Cliente (Selecione ou edite livremente)</label>
+            <div style="display: flex; gap: 8px;">
+              <select class="pub-party-select-detail" style="flex: 1; padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px;">
+                ${partiesOptionsHTML}
+              </select>
+              <input type="text" class="pub-client-name-input-detail" value="${escapeHTML(pub.nome_cliente)}" style="flex: 1.2; padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px;" placeholder="Nome do Cliente">
             </div>
-            
-            <div class="pub-form-row">
-              <div class="form-control-group" style="margin-bottom: 0;">
-                <label style="font-size: 11px;">Advogado Responsável *</label>
-                <select class="pub-lawyer-select" required style="padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%;">
-                  ${lawyerOptionsHTML}
-                </select>
-              </div>
-              
-              <div class="form-control-group" style="margin-bottom: 0;">
-                <label style="font-size: 11px;">Data Limite do Prazo *</label>
-                <input type="text" class="pub-deadline-input" value="${escapeHTML(formatarDataBR(pub.data_limite))}" required placeholder="DD/MM/AAAA" style="padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%;">
-              </div>
+          </div>
+          
+          <div class="pub-form-row">
+            <div class="form-control-group" style="margin-bottom: 0;">
+              <label style="font-size: 11px;">Advogado Responsável *</label>
+              <select class="pub-lawyer-select-detail" required style="padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%;">
+                ${lawyerOptionsHTML}
+              </select>
             </div>
             
             <div class="form-control-group" style="margin-bottom: 0;">
-              <label style="font-size: 11px;">O que o Juiz está pedindo (Despacho)</label>
-              <textarea class="pub-dispatch-input" rows="2" style="padding: 8px; font-size: 12.5px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%; resize: vertical;">${escapeHTML(pub.observacoes)}</textarea>
+              <label style="font-size: 11px;">Data Limite do Prazo *</label>
+              <input type="text" class="pub-deadline-input-detail" value="${escapeHTML(formatarDataBR(pub.data_limite))}" required placeholder="DD/MM/AAAA" style="padding: 8px; font-size: 13px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%;">
             </div>
+          </div>
+          
+          <div class="form-control-group" style="margin-bottom: 0;">
+            <label style="font-size: 11px;">O que o Juiz está pedindo (Despacho / Solicitação)</label>
+            <textarea class="pub-dispatch-input-detail" rows="3" style="padding: 8px; font-size: 12.5px; background: var(--primary-dark); border: 1px solid var(--border-color); color: var(--text-white); border-radius: 6px; width: 100%; resize: vertical;">${escapeHTML(pub.observacoes)}</textarea>
           </div>
           
           <div class="pub-original-text-wrapper">
@@ -1791,129 +1843,157 @@ const inicializarApp = async () => {
               <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
               Trecho da Publicação AASP
             </span>
-            <div class="pub-original-text-content">${escapeHTML(pub.texto_original)}</div>
+            <div class="pub-original-text-content" style="max-height: 120px;">${escapeHTML(pub.texto_original)}</div>
           </div>
         </div>
         
-        <div class="publication-card-footer">
-          <button type="button" class="btn-action-primary btn-import-pub" data-index="${index}">
-            <i data-lucide="plus-circle"></i>
-            <span>Importar para Painel</span>
+        <div class="publication-card-footer" style="margin-top: auto; padding-top: 10px;">
+          <button type="button" class="${btnClass}" id="btn-import-pub-detail" style="padding: 10px 24px;">
+            <i data-lucide="${btnIcon}"></i>
+            <span>${btnText}</span>
           </button>
         </div>
-      `;
-      
-      pdfPublicationsList.appendChild(card);
-      
-      const selectParty = card.querySelector('.pub-party-select');
-      const inputClientName = card.querySelector('.pub-client-name-input');
-      selectParty.addEventListener('change', (e) => {
-        inputClientName.value = e.target.value;
-      });
-      
-      const btnImport = card.querySelector('.btn-import-pub');
-      btnImport.addEventListener('click', async () => {
-        const clientName = inputClientName.value.trim();
-        
-        // Se já foi importado, o clique desfaz a importação
-        if (card.classList.contains('imported')) {
-          const processId = card.getAttribute('data-imported-process-id');
-          if (!processId) return;
-          
-          setButtonLoading(btnImport, true, "Desfazendo...");
-          
-          try {
-            await deleteProcesso(processId, getCurrentUser());
-            
-            showToast(`Importação do cliente "${clientName}" desfeita com sucesso!`, 'success');
-            
-            card.classList.remove('imported');
-            card.removeAttribute('data-imported-process-id');
-            
-            btnImport.className = 'btn-action-primary btn-import-pub';
-            btnImport.innerHTML = `
-              <i data-lucide="plus-circle"></i>
-              <span>Importar para Painel</span>
-            `;
-            
-            atualizarTelas();
-          } catch (err) {
-            showToast("Erro ao desfazer importação: " + err.message, "error");
-          } finally {
-            setButtonLoading(btnImport, false);
-            window.lucide.createIcons();
-          }
-          return;
-        }
+      </div>
+    `;
+    
+    const selectParty = pdfPublicationDetailsPanel.querySelector('.pub-party-select-detail');
+    const inputClientName = pdfPublicationDetailsPanel.querySelector('.pub-client-name-input-detail');
+    const selectLawyer = pdfPublicationDetailsPanel.querySelector('.pub-lawyer-select-detail');
+    const inputDeadline = pdfPublicationDetailsPanel.querySelector('.pub-deadline-input-detail');
+    const inputDispatch = pdfPublicationDetailsPanel.querySelector('.pub-dispatch-input-detail');
+    const btnImport = pdfPublicationDetailsPanel.querySelector('#btn-import-pub-detail');
 
-        const selectLawyer = card.querySelector('.pub-lawyer-select');
-        const lawyer = selectLawyer.value;
-        let deadlineDate = card.querySelector('.pub-deadline-input').value.trim();
-        
-        // Converter de DD/MM/AAAA para YYYY-MM-DD
-        if (deadlineDate && /^\d{2}\/\d{2}\/\d{4}$/.test(deadlineDate)) {
-          const parts = deadlineDate.split('/');
-          deadlineDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
-        
-        const dispatchText = card.querySelector('.pub-dispatch-input').value.trim();
-        
-        if (!clientName) {
-          showToast("Nome do cliente é obrigatório.", "warning");
-          return;
-        }
-        if (!lawyer) {
-          showToast("Selecione o advogado responsável.", "warning");
-          selectLawyer.focus();
-          return;
-        }
-        if (!deadlineDate) {
-          showToast("A data limite é obrigatória.", "warning");
-          return;
-        }
+    selectParty.addEventListener('change', (e) => {
+      inputClientName.value = e.target.value;
+      pub.nome_cliente = e.target.value;
+      const listItem = document.querySelector(`.pdf-pub-list-item[data-index="${index}"] .pdf-pub-item-client`);
+      if (listItem) listItem.textContent = e.target.value;
+    });
 
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dateRegex.test(deadlineDate)) {
-          showToast("Data limite inválida. Use o formato DIA/MÊS/ANO (ex: 25/07/2026).", "warning");
-          return;
-        }
+    inputClientName.addEventListener('input', (e) => {
+      pub.nome_cliente = e.target.value;
+      const listItem = document.querySelector(`.pdf-pub-list-item[data-index="${index}"] .pdf-pub-item-client`);
+      if (listItem) listItem.textContent = e.target.value;
+    });
+
+    selectLawyer.addEventListener('change', (e) => {
+      pub.advogado_responsavel = e.target.value;
+    });
+
+    inputDeadline.addEventListener('input', (e) => {
+      pub.data_limite_custom = e.target.value;
+    });
+
+    inputDispatch.addEventListener('input', (e) => {
+      pub.observacoes = e.target.value;
+    });
+
+    btnImport.addEventListener('click', async () => {
+      const clientName = inputClientName.value.trim();
+      
+      if (isImported) {
+        const processId = pub.importedProcessId;
+        if (!processId) return;
         
-        setButtonLoading(btnImport, true, "Cadastrando...");
+        setButtonLoading(btnImport, true, "Desfazendo...");
         
         try {
-          const processoData = {
-            nome_cliente: clientName,
-            numero_processo: pub.numero_processo,
-            telefone: '',
-            advogado_responsavel: lawyer,
-            data_limite: deadlineDate,
-            status_processo: 'Pendente',
-            observacoes: dispatchText
-          };
+          await deleteProcesso(processId, getCurrentUser());
           
-          const createdProcess = await addProcesso(processoData, getCurrentUser());
+          showToast(`Importação do cliente "${clientName}" desfeita com sucesso!`, 'success');
           
-          showToast(`Processo do cliente "${clientName}" cadastrado com sucesso!`, 'success');
+          pub.isImportedInDatabase = false;
+          pub.importedProcessId = null;
           
-          card.classList.add('imported');
-          card.setAttribute('data-imported-process-id', createdProcess.id);
-          
-          btnImport.className = 'btn-action-danger btn-undo-import';
-          btnImport.innerHTML = `
-            <i data-lucide="undo-2"></i>
-            <span>Desfazer Importação</span>
-          `;
-          
+          renderizarListaClientesImportados();
+          mostrarDetalhesPublicacao(index);
           atualizarTelas();
         } catch (err) {
-          showToast("Erro ao importar processo: " + err.message, "error");
+          showToast("Erro ao desfazer importação: " + err.message, "error");
         } finally {
           setButtonLoading(btnImport, false);
           window.lucide.createIcons();
         }
-      });
+        return;
+      }
+
+      const lawyer = selectLawyer.value;
+      let deadlineDate = inputDeadline.value.trim();
+      const dispatchText = inputDispatch.value.trim();
+      
+      if (!clientName) {
+        showToast("Nome do cliente é obrigatório.", "warning");
+        inputClientName.focus();
+        return;
+      }
+      if (!lawyer) {
+        showToast("Selecione o advogado responsável.", "warning");
+        selectLawyer.focus();
+        return;
+      }
+      if (!deadlineDate) {
+        showToast("A data limite é obrigatória.", "warning");
+        inputDeadline.focus();
+        return;
+      }
+
+      let deadlineDateIso = deadlineDate;
+      if (deadlineDate && /^\d{2}\/\d{2}\/\d{4}$/.test(deadlineDate)) {
+        const parts = deadlineDate.split('/');
+        deadlineDateIso = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(deadlineDateIso)) {
+        showToast("Data limite inválida. Use o formato DIA/MÊS/ANO (ex: 25/07/2026).", "warning");
+        inputDeadline.focus();
+        return;
+      }
+
+      setButtonLoading(btnImport, true, "Cadastrando...");
+
+      try {
+        const processoData = {
+          nome_cliente: clientName,
+          numero_processo: pub.numero_processo,
+          telefone: '',
+          advogado_responsavel: lawyer,
+          data_limite: deadlineDateIso,
+          status_processo: 'Pendente',
+          observacoes: dispatchText
+        };
+
+        const createdProcess = await addProcesso(processoData, getCurrentUser());
+
+        showToast(`Processo do cliente "${clientName}" cadastrado com sucesso!`, 'success');
+
+        pub.isImportedInDatabase = true;
+        pub.importedProcessId = createdProcess.id;
+        pub.data_limite = deadlineDateIso;
+
+        renderizarListaClientesImportados();
+        mostrarDetalhesPublicacao(index);
+        atualizarTelas();
+      } catch (err) {
+        showToast("Erro ao importar processo: " + err.message, "error");
+      } finally {
+        setButtonLoading(btnImport, false);
+        window.lucide.createIcons();
+      }
     });
-    
+
+    window.lucide.createIcons();
+  }
+
+  // Função para mostrar o estado vazio do painel de detalhes
+  function mostrarDetalhesVazio() {
+    selectedPubIndex = null;
+    pdfPublicationDetailsPanel.innerHTML = `
+      <div class="pdf-details-empty-state">
+        <i data-lucide="info" class="pdf-details-empty-icon"></i>
+        <span class="pdf-details-empty-text">Selecione um cliente da lista para ver os detalhes, observações e direcionar o advogado.</span>
+      </div>
+    `;
     window.lucide.createIcons();
   }
 
