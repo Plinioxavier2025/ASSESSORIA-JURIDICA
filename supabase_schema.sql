@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS public.processos (
     numero_processo TEXT NOT NULL,
     telefone TEXT,
     observacoes TEXT,
-    advogado_responsavel TEXT NOT NULL CHECK (advogado_responsavel IN ('Dra. Regina', 'Dr. Eloi', 'Dr. Walisson', 'Dra. Andreia', 'Dra. Iza')),
+    advogado_responsavel TEXT NOT NULL,
     data_cadastro DATE DEFAULT CURRENT_DATE NOT NULL,
     data_limite DATE NOT NULL,
     status_processo TEXT NOT NULL CHECK (status_processo IN ('Pendente', 'Em Andamento', 'Prazo Cumprido', 'Protocolado', 'Concluído')),
