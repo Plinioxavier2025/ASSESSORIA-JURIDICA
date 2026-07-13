@@ -30,8 +30,8 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.6.0/dist/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.js"></script>
-  <script type="module" crossorigin src="./assets/index-DMU1yNj4.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-ZgRdcQEP.css">
+  <script type="module" crossorigin src="./assets/index-Db0jLTAX.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BgJ9Fl9u.css">
 </head>
 <body>
   <!-- Marca d'água de iniciais no plano de fundo -->
@@ -274,21 +274,7 @@
                 <!-- Cards injetados via JS -->
               </div>
             </div>
-            
-            <!-- COLUNA DR. ELOI -->
-            <div class="kanban-column" data-lawyer="Dr. Eloi">
-              <div class="column-header">
-                <div class="lawyer-avatar init-eloi">DE</div>
-                <div class="lawyer-meta">
-                  <h3>Dr. Eloi</h3>
-                  <span>Sócio Executivo</span>
-                </div>
-                <span class="column-badge-count" id="count-eloi">0</span>
-              </div>
-              <div class="column-cards-container" id="cards-eloi">
-                <!-- Cards injetados via JS -->
-              </div>
-            </div>
+
             
             <!-- COLUNA WALISSON -->
             <div class="kanban-column" data-lawyer="Dr. Walisson">
@@ -351,7 +337,6 @@
                 <select id="filter-lawyer">
                   <option value="Todos">Todos os Advogados</option>
                   <option value="Dra. Regina">Dra. Regina</option>
-                  <option value="Dr. Eloi">Dr. Eloi</option>
                   <option value="Dr. Walisson">Dr. Walisson</option>
                   <option value="Dra. Andreia">Dra. Andreia</option>
                   <option value="Dra. Iza">Dra. Iza</option>
@@ -544,20 +529,16 @@
                     <input type="text" id="adv-nome-1" required placeholder="Nome do Advogado 1">
                   </div>
                   <div class="form-control-group">
-                    <label for="adv-nome-2"><i data-lucide="user"></i> Coluna 2 (Padrão: Dr. Eloi)</label>
+                    <label for="adv-nome-2"><i data-lucide="user"></i> Coluna 2 (Padrão: Dr. Walisson)</label>
                     <input type="text" id="adv-nome-2" required placeholder="Nome do Advogado 2">
                   </div>
                   <div class="form-control-group">
-                    <label for="adv-nome-3"><i data-lucide="user"></i> Coluna 3 (Padrão: Dr. Walisson)</label>
+                    <label for="adv-nome-3"><i data-lucide="user"></i> Coluna 3 (Padrão: Dra. Andreia)</label>
                     <input type="text" id="adv-nome-3" required placeholder="Nome do Advogado 3">
                   </div>
                   <div class="form-control-group">
-                    <label for="adv-nome-4"><i data-lucide="user"></i> Coluna 4 (Padrão: Dra. Andreia)</label>
+                    <label for="adv-nome-4"><i data-lucide="user"></i> Coluna 4 (Padrão: Dra. Iza)</label>
                     <input type="text" id="adv-nome-4" required placeholder="Nome do Advogado 4">
-                  </div>
-                  <div class="form-control-group">
-                    <label for="adv-nome-5"><i data-lucide="user"></i> Coluna 5 (Padrão: Dra. Iza)</label>
-                    <input type="text" id="adv-nome-5" required placeholder="Nome do Advogado 5">
                   </div>
                   <div style="margin-top: 15px;">
                     <button type="submit" class="btn-action-primary" style="width: auto; padding: 10px 24px;">
@@ -675,7 +656,6 @@
               <select id="proc-advogado" required>
                 <option value="" disabled selected>Selecione o Advogado</option>
                 <option value="Dra. Regina">Dra. Regina</option>
-                <option value="Dr. Eloi">Dr. Eloi</option>
                 <option value="Dr. Walisson">Dr. Walisson</option>
                 <option value="Dra. Andreia">Dra. Andreia</option>
                 <option value="Dra. Iza">Dra. Iza</option>
