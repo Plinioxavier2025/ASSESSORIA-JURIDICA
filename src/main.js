@@ -186,6 +186,32 @@ function obterListaAdvogados() {
   ];
 }
 
+// Retorna a chave (dbKey) do advogado associado ao usuário logado, se ele for um Operador.
+function obterAdvogadoChaveUsuario(user) {
+  if (!user) return null;
+  if (user.cargo === 'Administrador') return null; // Administrador Master vê todos
+
+  const advogados = obterListaAdvogados();
+  const userNomeNormalizado = user.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const userLoginNormalizado = user.login.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  for (const adv of advogados) {
+    const keyNormalizada = adv.dbKey.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const labelNormalizada = adv.label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    // Casos de correspondência
+    if (
+      userNomeNormalizado.includes(keyNormalizada) || 
+      userNomeNormalizado.includes(labelNormalizada) ||
+      keyNormalizada.includes(userLoginNormalizado) ||
+      labelNormalizada.includes(userLoginNormalizado)
+    ) {
+      return adv.dbKey;
+    }
+  }
+  return null;
+}
+
 // Retorna o nome de exibição (label) correspondente a chave do banco de dados
 function obterLabelAdvogado(dbKey) {
   const list = obterListaAdvogados();
@@ -644,7 +670,36 @@ export async function atualizarTelas() {
 
 
   // 1. Obter Processos
-  const processos = await getProcessos();
+  let processos = await getProcessos();
+
+  const userLawyerKey = obterAdvogadoChaveUsuario(currentUser);
+  if (userLawyerKey) {
+    processos = processos.filter(p => p.advogado_responsavel === userLawyerKey);
+  }
+
+  // Ocultar colunas Kanban que não pertencem ao advogado logado
+  const columns = document.querySelectorAll('.kanban-column');
+  columns.forEach(col => {
+    const lawyerKey = col.getAttribute('data-lawyer');
+    if (userLawyerKey && lawyerKey !== userLawyerKey) {
+      col.style.display = 'none';
+    } else {
+      col.style.display = 'flex';
+    }
+  });
+
+  // Ocultar o filtro de advogados da tabela para advogados logados
+  const filterLawyerSelect = document.getElementById('filter-lawyer');
+  if (filterLawyerSelect) {
+    const wrapper = filterLawyerSelect.closest('.filter-wrapper');
+    if (wrapper) {
+      if (userLawyerKey) {
+        wrapper.style.display = 'none';
+      } else {
+        wrapper.style.display = 'flex';
+      }
+    }
+  }
 
   const advogadosList = obterListaAdvogados();
 
@@ -1220,6 +1275,17 @@ async function abrirModalCadastro(processoId = null) {
     const calculatedDate = adicionarDiasUteis(editBaseDate, 15);
     const dateString = formatarDataBR(calculatedDate.toISOString().split('T')[0]);
     document.getElementById('proc-data-limite').value = dateString;
+  }
+
+  const procAdvogadoSelect = document.getElementById('proc-advogado');
+  if (procAdvogadoSelect) {
+    const userLawyerKey = obterAdvogadoChaveUsuario(getCurrentUser());
+    if (userLawyerKey) {
+      procAdvogadoSelect.value = userLawyerKey;
+      procAdvogadoSelect.disabled = true;
+    } else {
+      procAdvogadoSelect.disabled = false;
+    }
   }
 
   document.getElementById('modal-processo').style.display = 'flex';
@@ -2039,10 +2105,16 @@ const inicializarApp = async () => {
           
           let importedCount = 0;
           const currentUser = getCurrentUser();
+          const userLawyerKey = obterAdvogadoChaveUsuario(currentUser);
           
           let importedIds = [];
           for (const pub of publications) {
             const detectLawyer = detectarAdvogadoNoTexto(pub.texto_original);
+            
+            // Filtro de segurança: Advogados só importam publicações destinadas a si mesmos
+            if (userLawyerKey && detectLawyer !== userLawyerKey) {
+              continue;
+            }
             
             const processoData = {
               nome_cliente: pub.nome_cliente,
