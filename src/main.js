@@ -179,9 +179,9 @@ function obterTextoPrazo(diasRestantes, concluido) {
 function obterListaAdvogados() {
   return [
     { dbKey: 'Dra. Regina', label: localStorage.getItem('as_advogado_nome_1') || 'Dra. Regina', avatar: 'DR', class: 'init-regina', colId: 'cards-regina', countId: 'count-regina' },
-    { dbKey: 'Dr. Walisson', label: localStorage.getItem('as_advogado_nome_2') || 'Dr. Walisson', avatar: 'WA', class: 'init-walisson', colId: 'cards-walisson', countId: 'count-walisson' },
-    { dbKey: 'Dra. Andreia', label: localStorage.getItem('as_advogado_nome_3') || 'Dra. Andreia', avatar: 'AN', class: 'init-andreia', colId: 'cards-andreia', countId: 'count-andreia' },
-    { dbKey: 'Dra. Iza', label: localStorage.getItem('as_advogado_nome_4') || 'Dra. Iza', avatar: 'IZ', class: 'init-iza', colId: 'cards-iza', countId: 'count-iza' }
+    { dbKey: 'Dr. Walisson', label: localStorage.getItem('as_advogado_nome_3') || 'Dr. Walisson', avatar: 'WA', class: 'init-walisson', colId: 'cards-walisson', countId: 'count-walisson' },
+    { dbKey: 'Dra. Andreia', label: localStorage.getItem('as_advogado_nome_4') || 'Dra. Andreia', avatar: 'AN', class: 'init-andreia', colId: 'cards-andreia', countId: 'count-andreia' },
+    { dbKey: 'Dra. Iza', label: localStorage.getItem('as_advogado_nome_5') || 'Dra. Iza', avatar: 'IZ', class: 'init-iza', colId: 'cards-iza', countId: 'count-iza' }
   ];
 }
 
@@ -1126,11 +1126,11 @@ function renderizarConfiguracoes() {
   const adv1 = document.getElementById('adv-nome-1');
   if (adv1) adv1.value = localStorage.getItem('as_advogado_nome_1') || 'Dra. Regina';
   const adv2 = document.getElementById('adv-nome-2');
-  if (adv2) adv2.value = localStorage.getItem('as_advogado_nome_2') || 'Dr. Walisson';
+  if (adv2) adv2.value = localStorage.getItem('as_advogado_nome_3') || 'Dr. Walisson';
   const adv3 = document.getElementById('adv-nome-3');
-  if (adv3) adv3.value = localStorage.getItem('as_advogado_nome_3') || 'Dra. Andreia';
+  if (adv3) adv3.value = localStorage.getItem('as_advogado_nome_4') || 'Dra. Andreia';
   const adv4 = document.getElementById('adv-nome-4');
-  if (adv4) adv4.value = localStorage.getItem('as_advogado_nome_4') || 'Dra. Iza';
+  if (adv4) adv4.value = localStorage.getItem('as_advogado_nome_5') || 'Dra. Iza';
 
   // Ocultar card de backup para operadores
   const currentUser = getCurrentUser();
@@ -2176,9 +2176,9 @@ const inicializarApp = async () => {
       }
       
       localStorage.setItem('as_advogado_nome_1', n1);
-      localStorage.setItem('as_advogado_nome_2', n2);
-      localStorage.setItem('as_advogado_nome_3', n3);
-      localStorage.setItem('as_advogado_nome_4', n4);
+      localStorage.setItem('as_advogado_nome_3', n2);
+      localStorage.setItem('as_advogado_nome_4', n3);
+      localStorage.setItem('as_advogado_nome_5', n4);
       
       showToast("Nomes dos advogados atualizados com sucesso!", "success");
       
