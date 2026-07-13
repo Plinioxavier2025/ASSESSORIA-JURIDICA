@@ -60,62 +60,75 @@
         <span class="particle"></span>
       </div>
     </div>
-    <div class="login-box animate-fade-in">
-      <div class="login-logo-container">
-        <!-- Logotipo elegante das balanças da justiça em gradiente dourado -->
-        <svg class="logo-scale-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="gold-grad-login" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#aa841c" />
-              <stop offset="50%" stop-color="#d4af37" />
-              <stop offset="100%" stop-color="#ffd700" />
-            </linearGradient>
-          </defs>
-          <!-- Base e mastro -->
-          <path d="M50 82 L50 25 M35 82 L65 82 M42 85 L58 85" stroke="url(#gold-grad-login)" stroke-width="3" stroke-linecap="round" fill="none"/>
-          <circle cx="50" cy="22" r="3.5" fill="url(#gold-grad-login)"/>
-          <!-- Trave superior -->
-          <path d="M22 32 L78 32" stroke="url(#gold-grad-login)" stroke-width="3" stroke-linecap="round" fill="none"/>
-          <!-- Pratos da balança -->
-          <!-- Esquerdo -->
-          <path d="M22 32 L15 52 L29 52 Z" stroke="url(#gold-grad-login)" stroke-width="1.5" fill="rgba(212,175,55,0.15)"/>
-          <path d="M22 55 L22 32" stroke="url(#gold-grad-login)" stroke-width="1" fill="none"/>
-          <!-- Direito -->
-          <path d="M78 32 L71 52 L85 52 Z" stroke="url(#gold-grad-login)" stroke-width="1.5" fill="rgba(212,175,55,0.15)"/>
-          <path d="M78 55 L78 32" stroke="url(#gold-grad-login)" stroke-width="1" fill="none"/>
-        </svg>
-      </div>
-      <div class="login-heading">
-        <h2>ÁVILA & SOUZA</h2>
-        <p>ADVOGADOS</p>
-        <div class="login-welcome-msg">"Cada processo tem uma história.<br>Nossa missão é construir o melhor desfecho para a sua."</div>
+    <div class="login-split-container">
+      <div class="login-split-left">
+        <div class="login-box animate-fade-in">
+          <div class="login-logo-container">
+            <!-- Logotipo elegante das balanças da justiça em gradiente dourado -->
+            <svg class="logo-scale-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="gold-grad-login" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#aa841c" />
+                  <stop offset="50%" stop-color="#d4af37" />
+                  <stop offset="100%" stop-color="#ffd700" />
+                </linearGradient>
+              </defs>
+              <!-- Base e mastro -->
+              <path d="M50 82 L50 25 M35 82 L65 82 M42 85 L58 85" stroke="url(#gold-grad-login)" stroke-width="3" stroke-linecap="round" fill="none"/>
+              <circle cx="50" cy="22" r="3.5" fill="url(#gold-grad-login)"/>
+              <!-- Trave superior -->
+              <path d="M22 32 L78 32" stroke="url(#gold-grad-login)" stroke-width="3" stroke-linecap="round" fill="none"/>
+              <!-- Pratos da balança -->
+              <!-- Esquerdo -->
+              <path d="M22 32 L15 52 L29 52 Z" stroke="url(#gold-grad-login)" stroke-width="1.5" fill="rgba(212,175,55,0.15)"/>
+              <path d="M22 55 L22 32" stroke="url(#gold-grad-login)" stroke-width="1" fill="none"/>
+              <!-- Direito -->
+              <path d="M78 32 L71 52 L85 52 Z" stroke="url(#gold-grad-login)" stroke-width="1.5" fill="rgba(212,175,55,0.15)"/>
+              <path d="M78 55 L78 32" stroke="url(#gold-grad-login)" stroke-width="1" fill="none"/>
+            </svg>
+          </div>
+          <div class="login-heading">
+            <h2>ÁVILA & SOUZA</h2>
+            <p style="margin-bottom: 25px;">ADVOGADOS</p>
+          </div>
+          
+          <form id="login-form">
+            <div class="form-control-group">
+              <label for="login-user"><i data-lucide="user"></i> Usuário / Login</label>
+              <input type="text" id="login-user" placeholder="Digite seu login" required autocomplete="username">
+            </div>
+            <div class="form-control-group">
+              <label for="login-pass"><i data-lucide="lock"></i> Senha</label>
+              <input type="password" id="login-pass" placeholder="Digite sua senha" required autocomplete="current-password">
+            </div>
+            
+            <button type="submit" class="btn-action-primary btn-login">
+              <span>Acessar o Sistema</span>
+              <i data-lucide="log-in"></i>
+            </button>
+          </form>
+          
+          <div class="login-demo-helpers">
+            <p>Para testes rápidos:</p>
+            <div class="demo-buttons">
+              <button type="button" class="btn-demo-quick" onclick="document.getElementById('login-user').value='admin'; document.getElementById('login-pass').value='123';">Admin (Master)</button>
+            </div>
+          </div>
+          
+          <div class="login-box-footer">
+            Central de Prazos Processuais &bull; &copy; 2026
+          </div>
+        </div>
       </div>
       
-      <form id="login-form">
-        <div class="form-control-group">
-          <label for="login-user"><i data-lucide="user"></i> Usuário / Login</label>
-          <input type="text" id="login-user" placeholder="Digite seu login" required autocomplete="username">
+      <div class="login-split-right">
+        <div class="login-welcome-quote animate-slide-up">
+          <div class="quote-decorator-line"></div>
+          <span class="quote-mark-large">“</span>
+          <p class="quote-main-text">Cada processo tem uma história. Nossa missão é construir o melhor desfecho para a sua.</p>
+          <span class="quote-mark-large-close">”</span>
+          <div class="quote-firm-badge">ÁVILA & SOUZA ADVOGADOS</div>
         </div>
-        <div class="form-control-group">
-          <label for="login-pass"><i data-lucide="lock"></i> Senha</label>
-          <input type="password" id="login-pass" placeholder="Digite sua senha" required autocomplete="current-password">
-        </div>
-        
-        <button type="submit" class="btn-action-primary btn-login">
-          <span>Acessar o Sistema</span>
-          <i data-lucide="log-in"></i>
-        </button>
-      </form>
-      
-      <div class="login-demo-helpers">
-        <p>Para testes rápidos:</p>
-        <div class="demo-buttons">
-          <button type="button" class="btn-demo-quick" onclick="document.getElementById('login-user').value='admin'; document.getElementById('login-pass').value='123';">Admin (Master)</button>
-        </div>
-      </div>
-      
-      <div class="login-box-footer">
-        Central de Prazos Processuais &bull; &copy; 2026
       </div>
     </div>
   </div>
