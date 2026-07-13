@@ -1,4 +1,4 @@
-const CACHE_NAME = 'as-prazos-cache-v12';
+const CACHE_NAME = 'as-prazos-cache-v13';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

@@ -430,16 +430,20 @@ h6 {
 }
 
 .login-welcome-msg {
-  font-size: 12px;
-  color: var(--text-normal);
+  font-size: 13px;
+  color: #ebd394; /* Tom dourado suave */
   line-height: 1.6;
   margin-bottom: 25px;
   margin-top: -10px;
-  padding: 10px 14px;
-  background: rgba(212, 175, 55, 0.05);
-  border: 1px solid rgba(212, 175, 55, 0.15);
-  border-radius: 8px;
+  padding: 12px 16px;
+  background: rgba(212, 175, 55, 0.04);
+  border-left: 3px solid var(--gold-primary);
+  border-right: 1px solid rgba(212, 175, 55, 0.12);
+  border-top: 1px solid rgba(212, 175, 55, 0.12);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+  border-radius: 4px 8px 8px 4px;
   text-align: center;
+  font-style: italic;
 }
 
 .form-control-group {
