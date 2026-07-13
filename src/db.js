@@ -550,6 +550,7 @@ export async function addProcesso(processoData, currentUser) {
       }
     } catch (e) {
       console.error("Erro no Supabase addProcesso, usando local", e);
+      throw e;
     }
   }
 
@@ -636,6 +637,7 @@ export async function editProcesso(id, processoData, currentUser) {
       }
     } catch (e) {
       console.error("Erro no Supabase editProcesso", e);
+      throw e;
     }
   }
 
@@ -706,6 +708,7 @@ export async function deleteProcesso(id, currentUser) {
       }
     } catch (e) {
       console.error("Erro no Supabase deleteProcesso", e);
+      throw e;
     }
   }
 
