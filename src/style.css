@@ -134,10 +134,21 @@ h6 {
   width: 100vw;
   height: 100vh;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   z-index: 1000;
   overflow: hidden;
+  padding-left: 10%; /* Recuo elegante na lateral esquerda */
+}
+
+@media (max-width: 900px) {
+  .login-wrapper {
+    justify-content: center;
+    padding-left: 0;
+  }
+  .login-background-image {
+    background-position: center 25% !important;
+  }
 }
 
 .login-background-image {
@@ -148,7 +159,7 @@ h6 {
   height: 100%;
   background-image: url('./law_office_bg.png');
   background-size: cover;
-  background-position: center 25%; /* Alinha um pouco mais para cima para centralizar o rosto */
+  background-position: 70% 25%; /* Desloca a imagem para a direita, mantendo a Dra. Regina visível */
   z-index: -2;
   animation: kenBurnsZoom 30s ease-in-out infinite alternate;
 }
